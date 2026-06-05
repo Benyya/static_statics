@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astrum League | Рейтинг и статистика</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0A0C12; font-family: 'Inter', sans-serif; color: #E8EDF2; line-height: 1.4; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+        header { background: #0F1219; border-bottom: 1px solid #1E2530; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .logo { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #FFF, #B8860B); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        nav a { color: #D3DCE8; text-decoration: none; margin: 0 15px; font-weight: 600; cursor: pointer; }
+        nav a:hover, nav a.active { color: #F5A623; }
+        .page { display: none; padding: 20px 0; }
+        .page.active { display: block; }
+        .card { background: #0F1219; border: 1px solid #1E2530; border-radius: 12px; margin-bottom: 20px; }
+        .card-header { padding: 15px 20px; border-bottom: 1px solid #1E2530; background: #12161F; font-weight: 700; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .match-row { display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #1A2028; cursor: pointer; }
+        .match-row:hover { background: #161C26; }
+        .team { display: flex; align-items: center; gap: 8px; }
+        .vs { color: #F5A623; margin: 0 10px; }
+        .score { color: #F5A623; font-weight: 800; }
+        .stats-table { width: 100%; border-collapse: collapse; }
+        .stats-table th, .stats-table td { padding: 10px; text-align: left; border-bottom: 1px solid #1A2028; }
+        .stats-table th { color: #F5A623; cursor: pointer; user-select: none; }
+        .period-controls, .category-buttons { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .btn { background: #1E2A36; border: none; color: #F5A623; padding: 6px 14px; border-radius: 20px; cursor: pointer; }
+        .cat-btn { background: #1E2A36; padding: 5px 12px; border-radius: 20px; cursor: pointer; border: none; color: #E8EDF2; }
+        .cat-btn.active { background: #F5A623; color: #0A0C12; }
+        .player-link { color: #F5A623; cursor: pointer; text-decoration: none; }
+        .player-link:hover { text-decoration: underline; }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #0F1219; max-width: 700px; width: 90%; padding: 20px; border-radius: 16px; max-height: 80vh; overflow-y: auto; }
+        .close-modal { float: right; cursor: pointer; font-size: 1.5rem; }
+        @media (max-width: 800px) { nav { margin-top: 10px; } }
+    </style>
+</head>
+<body>
+<header>
+    <div class="logo">ASTRUM<span style="color:#B8860B;">LEAGUE</span></div>
+    <nav>
+        <a data-page="overview" class="active">Overview</a>
+        <a data-page="matches">Матчи</a>
+        <a data-page="rating">Рейтинг</a>
+    </nav>
+</header>
+<div class="container">
+    <div id="overview-page" class="page active">Загрузка...</div>
+    <div id="matches-page" class="page"></div>
+    <div id="rating-page" class="page"></div>
+</div>
+
+<script>
+    // ========== НАСТРОЙКИ ==========
+    const API_URL = 'https://script.google.com/macros/s/AKfycbz9mt849vRiX8_OcrlZuVO9N6fH_HqiA2_1_pcQowYH6WjLuxQaKo0mO8DdN7Rs4WBZDw/exec';
+    let currentPage = 'overview';
+    let matchesData = [];
+    let currentFrom = '', currentTo = '', currentCategory = 'impact';
+
+    async function loadMatches() {
+        try {
+            const res = await fetch(`${API_URL}?action=getMatches`);
+            const data = await res.json();
+            matchesData = data.matches || [];
+            renderOverview();
+            renderMatchesList();
+        } catch(e) {
+            console.error(e);
+            document.getElementById('overview-page').innerHTML = '<div class="card"><div class="card-header">Ошибка загрузки</div><div class="match-row">Не удалось загрузить данные.</div></div>';
+        }
+    }
+
+    async function loadRating() {
+        try {
+            let url = `${API_URL}?action=getPlayers&category=${currentCategory}`;
+            if (currentFrom) url += `&from=${currentFrom}`;
+            if (currentTo) url += `&to=${currentTo}`;
+            const res = await fetch(url);
+            const players = await res.json();
+            renderRatingTable(players);
+        } catch(e) {
+            console.error(e);
+            document.getElementById('ratingTableContainer').innerHTML = '<div class="match-row">Ошибка загрузки рейтинга</div>';
+        }
+    }
+
+    function renderOverview() {
+        const lastMatches = matchesData.slice(-8).reverse();
+        let html = `<div class="card"><div class="card-header">Последние матчи</div>`;
+        lastMatches.forEach(m => {
+            html += `<div class="match-row" data-match-id="${m.id}">
+                        <div class="team">${m.team1}</div><div class="vs">VS</div><div class="team">${m.team2}</div>
+                        <div><span class="score">${m.score}</span> <span style="margin-left:15px;">${m.date}</span></div>
+                    </div>`;
+        });
+        html += `</div><div class="card"><div class="card-header">Информация</div><div class="match-row">Всего матчей: ${matchesData.length}</div></div>`;
+        document.getElementById('overview-page').innerHTML = html;
+        attachMatchClick();
+    }
+
+    function renderMatchesList() {
+        let html = `<div class="card"><div class="card-header">Все матчи</div>`;
+        matchesData.forEach(m => {
+            html += `<div class="match-row" data-match-id="${m.id}"><div class="team">${m.team1}</div><div class="vs">VS</div><div class="team">${m.team2}</div><div><span class="score">${m.score}</span> ${m.date}</div></div>`;
+        });
+        html += `</div>`;
+        document.getElementById('matches-page').innerHTML = html;
+        attachMatchClick();
+    }
+
+    function renderRatingTable(players) {
+        let html = `<table class="stats-table">
+            <thead><tr><th>#</th><th>Игрок</th><th>Команда</th><th>Матчи</th>`;
+        if (currentCategory === 'killer') html += '<th>Убийства</th>';
+        else if (currentCategory === 'deaths') html += '<th>Смерти</th>';
+        else if (currentCategory === 'clutcher') html += '<th>Клатчи</th>';
+        else if (currentCategory === 'winner') html += '<th>Победы %</th>';
+        else if (currentCategory === 'reviver') html += '<th>Реанимации</th>';
+        else html += '<th>Impact</th><th>K/D</th><th>Хэдшоты%</th>';
+        html += `</tr></thead><tbody>`;
+        players.forEach((p, idx) => {
+            html += `<tr>
+                <td>${idx+1}</td>
+                <td class="player-link" data-player="${p.name}">${p.name}</td>
+                <td>${p.team}</td>
+                <td>${p.matches}</td>`;
+            if (currentCategory === 'killer') html += `<td>${p.kills}</td>`;
+            else if (currentCategory === 'deaths') html += `<td>${p.deaths}</td>`;
+            else if (currentCategory === 'clutcher') html += `<td>${p.clutches}</td>`;
+            else if (currentCategory === 'winner') html += `<td>${p.winrate}%</td>`;
+            else if (currentCategory === 'reviver') html += `<td>${p.revives || 0}</td>`;
+            else {
+                const hsPercent = p.kills ? ((p.headshots/p.kills)*100).toFixed(1) : '0';
+                html += `<td><strong>${p.impact}</strong></td><td>${p.kd}</td><td>${hsPercent}%</td>`;
+            }
+            html += `</tr>`;
+        });
+        html += `</tbody></table>`;
+        document.getElementById('ratingTableContainer').innerHTML = html;
+        document.querySelectorAll('.player-link').forEach(el => {
+            el.addEventListener('click', () => showPlayerPage(el.dataset.player));
+        });
+    }
+
+    function renderRatingUI() {
+        let html = `<div class="card">
+            <div class="card-header">
+                <span>🏆 Рейтинг</span>
+                <div class="period-controls">
+                    <input type="date" id="fromDate" placeholder="с даты">
+                    <input type="date" id="toDate" placeholder="по дату">
+                    <button id="applyDateFilter" class="btn">Применить</button>
+                    <button id="resetDateFilter" class="btn">Сбросить</button>
+                </div>
+            </div>
+            <div class="category-buttons" style="padding: 10px 20px; border-bottom: 1px solid #1E2530;">
+                <button class="cat-btn ${currentCategory === 'impact' ? 'active' : ''}" data-cat="impact">Impact</button>
+                <button class="cat-btn ${currentCategory === 'killer' ? 'active' : ''}" data-cat="killer">🔪 Киллер</button>
+                <button class="cat-btn ${currentCategory === 'deaths' ? 'active' : ''}" data-cat="deaths">💀 Самый умирающий</button>
+                <button class="cat-btn ${currentCategory === 'clutcher' ? 'active' : ''}" data-cat="clutcher">🎮 Клатчер</button>
+                <button class="cat-btn ${currentCategory === 'winner' ? 'active' : ''}" data-cat="winner">🏆 Победитель</button>
+                <button class="cat-btn ${currentCategory === 'reviver' ? 'active' : ''}" data-cat="reviver">❤️ Ресальщик</button>
+            </div>
+            <div id="ratingTableContainer">Загрузка...</div>
+        </div>`;
+        document.getElementById('rating-page').innerHTML = html;
+        document.getElementById('fromDate').value = currentFrom;
+        document.getElementById('toDate').value = currentTo;
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentCategory = btn.dataset.cat;
+                renderRatingUI();
+                loadRating();
+            });
+        });
+        document.getElementById('applyDateFilter').addEventListener('click', () => {
+            currentFrom = document.getElementById('fromDate').value;
+            currentTo = document.getElementById('toDate').value;
+            renderRatingUI();
+            loadRating();
+        });
+        document.getElementById('resetDateFilter').addEventListener('click', () => {
+            currentFrom = '';
+            currentTo = '';
+            renderRatingUI();
+            loadRating();
+        });
+    }
+
+    async function showPlayerPage(playerName) {
+        try {
+            const res = await fetch(`${API_URL}?action=getPlayer&name=${encodeURIComponent(playerName)}`);
+            const p = await res.json();
+            const hsPercent = p.kills ? ((p.headshots/p.kills)*100).toFixed(1) : '0';
+            let html = `<div class="card"><div class="card-header">${p.name} (${p.team})</div>
+                <table class="stats-table">
+                    <tbody>
+                        <tr><td style="color:#F5A623;">Матчи</td><td>${p.matches}</td></tr>
+                        <tr><td style="color:#F5A623;">Победы</td><td>${p.wins} (${p.winrate}%)</td></tr>
+                        <tr><td style="color:#F5A623;">Убийства</td><td>${p.kills}</td></tr>
+                        <tr><td style="color:#F5A623;">Смерти</td><td>${p.deaths}</td></tr>
+                        <tr><td style="color:#F5A623;">K/D</td><td>${p.kd}</td></tr>
+                        <tr><td style="color:#F5A623;">Ассисты</td><td>${p.assists}</td></tr>
+                        <tr><td style="color:#F5A623;">Хэдшоты</td><td>${p.headshots} (${hsPercent}%)</td></tr>
+                        <tr><td style="color:#F5A623;">Точность</td><td>${p.accuracy}%</td></tr>
+                        <tr><td style="color:#F5A623;">Клатчи</td><td>${p.clutches}</td></tr>
+                        <tr><td style="color:#F5A623;">Мультикиллы</td><td>${p.multikills}</td></tr>
+                        <tr><td style="color:#F5A623;">Реанимации</td><td>${p.revives || 0}</td></tr>
+                        <tr><td style="color:#F5A623;">Impact рейтинг</td><td><strong>${p.impact}</strong></td></tr>
+                    </tbody>
+                </table>
+                <div style="padding:15px;"><button class="btn" id="backRating">← Назад к рейтингу</button></div>
+            </div>`;
+            document.getElementById('rating-page').innerHTML = html;
+            document.getElementById('rating-page').classList.add('active');
+            document.getElementById('overview-page').classList.remove('active');
+            document.getElementById('matches-page').classList.remove('active');
+            currentPage = 'rating';
+            document.getElementById('backRating').addEventListener('click', () => {
+                currentPage = 'rating';
+                renderRatingUI();
+                loadRating();
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById('rating-page').classList.add('active');
+            });
+        } catch(e) {
+            console.error(e);
+            alert('Ошибка загрузки данных игрока');
+        }
+    }
+
+    function showMatchDetail(match) {
+        let mapsHtml = '<div class="card-header">Карты</div><div class="match-row">';
+        (match.maps || []).forEach(map => {
+            mapsHtml += `<div><strong>${map.name}</strong> ${map.score}</div>`;
+        });
+        mapsHtml += `</div><div class="card-header">Составы</div>`;
+        (match.teams || []).forEach(team => {
+            mapsHtml += `<div class="match-row"><strong>${team.name}</strong>: ${team.players.map(p => p.name).join(', ')}</div>`;
+        });
+        let html = `<div class="card"><div class="card-header">${match.team1} vs ${match.team2} — ${match.score}</div>
+                    <div class="match-row">Дата: ${match.date}</div>
+                    ${mapsHtml}
+                    <div style="padding:15px;"><button class="btn" id="backMatches">← Назад</button></div>
+                    </div>`;
+        document.getElementById('matches-page').innerHTML = html;
+        document.getElementById('matches-page').classList.add('active');
+        document.getElementById('overview-page').classList.remove('active');
+        document.getElementById('rating-page').classList.remove('active');
+        document.getElementById('backMatches').addEventListener('click', () => {
+            currentPage = 'matches';
+            renderMatchesList();
+            document.getElementById('matches-page').classList.add('active');
+        });
+    }
+
+    function attachMatchClick() {
+        document.querySelectorAll('.match-row[data-match-id]').forEach(el => {
+            el.addEventListener('click', () => {
+                const id = parseInt(el.dataset.matchId);
+                const match = matchesData.find(m => m.id === id);
+                if (match) showMatchDetail(match);
+            });
+        });
+    }
+
+    document.querySelectorAll('nav a').forEach(link => {
+        link.addEventListener('click', () => {
+            document.querySelectorAll('nav a').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            currentPage = link.dataset.page;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            if (currentPage === 'overview') {
+                document.getElementById('overview-page').classList.add('active');
+                renderOverview();
+            } else if (currentPage === 'matches') {
+                document.getElementById('matches-page').classList.add('active');
+                renderMatchesList();
+            } else if (currentPage === 'rating') {
+                document.getElementById('rating-page').classList.add('active');
+                renderRatingUI();
+                loadRating();
+            }
+        });
+    });
+
+    loadMatches();
+</script>
+
+<!-- ========== АДМИН-ПАНЕЛЬ (Alt+M) ========== -->
+<div id="adminAuthModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-admin-auth close-modal">&times;</span>
+        <h3>🔐 Вход в админ-панель</h3>
+        <div style="background: #2A3A48; padding: 10px; border-radius: 8px; margin: 15px 0;">
+            ⚠️ <strong>Привет, ты почти админ или нет?</strong><br>
+            Если ты не уверен – нажми <strong>«Назад»</strong> и не вводи пароль.<br>
+            <small>Для вызова панели нажми <strong>Alt+M</strong></small>
+        </div>
+        <input type="password" id="adminPasswordAuth" placeholder="Введите пароль" autocomplete="off" style="width: 100%; padding: 8px; margin: 8px 0;">
+        <div style="display: flex; gap: 10px; margin-top: 12px;">
+            <button id="submitAdminPassword" class="btn">Войти</button>
+            <button id="cancelAdminAuth" class="btn" style="background: #3A2A2A;">← Назад</button>
+        </div>
+        <div id="adminAuthError" style="color: #ff7777; margin-top: 8px;"></div>
+    </div>
+</div>
+
+<div id="adminPanelModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-admin-panel close-modal">&times;</span>
+        <h3>🛠️ Админ-панель</h3>
+        <h4>🗑️ Удалить матч по ID</h4>
+        <input type="number" id="deleteMatchId" placeholder="ID матча">
+        <button id="deleteMatchBtn" class="btn">Удалить</button>
+        <hr>
+        <h4>✏️ Обновить матч (загрузить JSON)</h4>
+        <input type="number" id="updateMatchId" placeholder="ID матча">
+        <input type="file" id="updateJsonFile" accept=".json">
+        <button id="updateMatchBtn" class="btn">Обновить</button>
+        <hr>
+        <p><strong>📋 Список ID матчей:</strong> <span id="matchIdsList"></span></p>
+        <button id="logoutAdminBtn" class="btn"><i class="fas fa-sign-out-alt"></i> Выйти из админки</button>
+    </div>
+</div>
+
+<script>
+    const ADMIN_PASSWORD = 'q1q2';
+    // Новая комбинация: Alt + M
+    document.addEventListener('keydown', (e) => {
+        if (e.altKey && e.key.toLowerCase() === 'm') {
+            e.preventDefault();
+            document.getElementById('adminAuthModal').style.display = 'flex';
+        }
+    });
+
+    const authModal = document.getElementById('adminAuthModal');
+    const panelModal = document.getElementById('adminPanelModal');
+    const closeAuth = document.querySelector('.close-admin-auth');
+    const closePanel = document.querySelector('.close-admin-panel');
+    const cancelAuth = document.getElementById('cancelAdminAuth');
+
+    closeAuth.onclick = () => { authModal.style.display = 'none'; clearAuth(); };
+    closePanel.onclick = () => panelModal.style.display = 'none';
+    cancelAuth.onclick = () => { authModal.style.display = 'none'; clearAuth(); };
+    window.onclick = (e) => { if (e.target === authModal) { authModal.style.display = 'none'; clearAuth(); } if (e.target === panelModal) panelModal.style.display = 'none'; };
+
+    function clearAuth() {
+        document.getElementById('adminPasswordAuth').value = '';
+        document.getElementById('adminAuthError').innerText = '';
+    }
+
+    document.getElementById('submitAdminPassword').onclick = () => {
+        const pwd = document.getElementById('adminPasswordAuth').value;
+        if (pwd === ADMIN_PASSWORD) {
+            authModal.style.display = 'none';
+            panelModal.style.display = 'flex';
+            loadMatchIds();
+        } else {
+            document.getElementById('adminAuthError').innerText = 'Неверный пароль';
+        }
+    };
+
+    async function loadMatchIds() {
+        try {
+            const res = await fetch(`${API_URL}?action=getMatches`);
+            const data = await res.json();
+            const ids = (data.matches || []).map(m => m.id).join(', ');
+            document.getElementById('matchIdsList').innerText = ids || 'нет матчей';
+        } catch(e) {
+            document.getElementById('matchIdsList').innerText = 'ошибка загрузки';
+        }
+    }
+
+    document.getElementById('deleteMatchBtn').onclick = async () => {
+        const id = parseInt(document.getElementById('deleteMatchId').value);
+        if (!id) return alert('Введите ID матча');
+        if (!confirm(`Удалить матч ID ${id}?`)) return;
+        try {
+            await fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', id: id })
+            });
+            alert('Запрос на удаление отправлен. Обновите страницу через минуту.');
+            setTimeout(() => location.reload(), 2000);
+        } catch(e) {
+            alert('Ошибка отправки');
+        }
+    };
+document.getElementById('updateMatchBtn').onclick = async () => {
+    const file = document.getElementById('updateJsonFile').files[0];
+    if (!file) return alert('Выберите JSON файл');
+    const text = await file.text();
+    try {
+        let json = JSON.parse(text);
+        
+        // Если JSON из API VK Play
+        if (json.match && json.teams) {
+            const matchId = json.match.id;
+            const date = (json.match.startTime || json.match.endTime || '').slice(0,10);
+            const tournament = json.tournament?.name || 'Astrum League';
+            const team1 = json.teams[0]?.name || 'TBD';
+            const team2 = json.teams[1]?.name || 'TBD';
+            const score = `${json.match.pointsTeam1 || 0}:${json.match.pointsTeam2 || 0}`;
+            const maps = [];
+            const teams = json.teams.map(t => ({
+                name: t.name,
+                players: t.players.filter(p => p.role === 1 || p.role === 2).slice(0,5).map(p => ({ name: p.gameNick, role: p.isCaptain ? 'Капитан' : 'Игрок' }))
+            }));
+            json = { id: matchId, date, tournament, team1, team2, score, maps, teams };
+        }
+        
+        // Если в json нет id, попробуем взять из поля ввода
+        if (!json.id) {
+            const manualId = parseInt(document.getElementById('updateMatchId').value);
+            if (isNaN(manualId)) return alert('Укажите ID матча в поле или в JSON (поле id)');
+            json.id = manualId;
+        }
+        
+        await fetch(API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update', id: json.id, ...json })
+        });
+        alert('Запрос на обновление отправлен. Обновите страницу через минуту.');
+        setTimeout(() => location.reload(), 2000);
+    } catch(e) {
+        alert('Ошибка: неверный JSON или преобразование не удалось');
+        console.error(e);
+    }
+};
+
+    
+
+    document.getElementById('logoutAdminBtn').onclick = () => {
+        panelModal.style.display = 'none';
+        alert('Вы вышли из админ-панели');
+    };
+</script>
+</body>
+</html>
