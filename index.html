@@ -55,7 +55,7 @@
 
 <script>
     // ========== НАСТРОЙКИ ==========
-    const API_URL = 'https://script.google.com/macros/s/AKfycbz1Bi6QuPAVX1IKiUWuMpvoZkYwXJ4m_CSw3aXc5IiNGYybVD607ce_2fYtfuMn7Q-dDA/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzHl3J6yzpTnLFz940HO--cjOVxzlvy5l6kfqfuvPNBMI72_1OZ8916V-AurVzhsZ_pmw/exec'; // замените на URL вашего Google Apps Script
     let matchesData = [];
     let currentPage = 'overview';
     let currentFrom = '', currentTo = '', currentCategory = 'impact';
@@ -441,6 +441,7 @@
         }
     };
 
+    // Обновлённый обработчик загрузки stats.json (использует action: 'add')
     document.getElementById('uploadStatsBtn').onclick = async () => {
         const file = document.getElementById('statFile').files[0];
         if (!file) return alert('Выберите JSON файл');
@@ -555,11 +556,13 @@
                 maps_json: maps,
                 teams_json: teams
             };
+            
+            // Используем action: 'add' вместо 'update'
             await fetch(API_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'update', id: finalData.id, ...finalData })
+                body: JSON.stringify({ action: 'add', ...finalData })
             });
             document.getElementById('uploadStatus').innerHTML = '✅ Матч отправлен! Обновите страницу через минуту.';
             setTimeout(() => location.reload(), 2000);
