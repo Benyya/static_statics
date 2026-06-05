@@ -55,7 +55,7 @@
 
 <script>
     // ========== НАСТРОЙКИ ==========
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxossDadJpb_sbt282jXLJeUSmVXzLgTimERsTw-umiJ16ZFmXkE4rIFWlh8hoWpm3O7A/exec'; 
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzzSwsnPzSixJMDfj8nHXjCePu-ZKyYHGX8MYNS1H0kWMf6tW83nOWF8eA4gTsLrvNAvQ/exec';
     let matchesData = [];
     let currentPage = 'overview';
     let currentFrom = '', currentTo = '', currentCategory = 'impact';
@@ -195,13 +195,13 @@
         else if (currentCategory === 'winner') html += '<th>Победы %</th>';
         else if (currentCategory === 'reviver') html += '<th>Реанимации</th>';
         else html += '<th>Impact</th><th>K/D</th><th>Хэдшоты%</th>';
-        html += `</tr></thead><tbody>`;
+        html += `<tr></thead><tbody>`;
         players.forEach((p, idx) => {
             html += `<tr>
                 <td>${idx+1}</td>
                 <td class="player-link" data-player="${p.name}">${p.name}</td>
                 <td>${p.team || '?'}</td>
-                <td>${p.matches}<tr>`;
+                <td>${p.matches}</td>`;
             if (currentCategory === 'killer') html += `<td>${p.kills}</td>`;
             else if (currentCategory === 'deaths') html += `<td>${p.deaths}</td>`;
             else if (currentCategory === 'clutcher') html += `<td>${p.clutches}</td>`;
@@ -211,9 +211,9 @@
                 const hsPercent = p.kills ? ((p.headshots/p.kills)*100).toFixed(1) : '0';
                 html += `<td><strong>${p.impact}</strong></td><td>${p.kd}</td><td>${hsPercent}%</td>`;
             }
-            html += `<tr>`;
+            html += `</tr>`;
         });
-        html += `</tbody><table>`;
+        html += `</tbody></table>`;
         document.getElementById('ratingTableContainer').innerHTML = html;
         document.querySelectorAll('.player-link').forEach(el => {
             el.addEventListener('click', () => {
@@ -451,40 +451,31 @@
                 throw new Error('Файл не содержит статистику матча (нет поля games)');
             }
             
-            // 1. Извлекаем ID матча из имени файла
+            // Извлекаем ID из имени файла
             let matchId = null;
             const fileName = file.name;
             const matchIdMatch = fileName.match(/(\d+)(?:_stats)?\.json$/);
             if (matchIdMatch) {
                 matchId = matchIdMatch[1];
-                console.log('Извлечён ID матча из имени файла:', matchId);
-            } else {
-                console.warn('Не удалось извлечь ID из имени файла, будет использован временный ID');
             }
             
-            // 2. Значения по умолчанию
             let matchDate = new Date().toISOString().slice(0,10);
             let tournamentName = "Astrum Лига 2026 Сезон II";
             
-            // 3. Если есть ID, запрашиваем метаданные
             if (matchId) {
                 try {
-                    const metaRes = await fetch(`https://pvp.vkplay.ru/api/v1/match/${matchId}`);
+                    const metaRes = await fetch(`${API_URL}?action=getMatchMeta&id=${matchId}`);
                     if (metaRes.ok) {
                         const meta = await metaRes.json();
                         if (meta.match && meta.match.startTime) {
                             matchDate = meta.match.startTime.slice(0,10);
-                            console.log('Дата из API:', matchDate);
                         }
                         if (meta.tournament && meta.tournament.name) {
                             tournamentName = meta.tournament.name;
-                            console.log('Турнир из API:', tournamentName);
                         }
-                    } else {
-                        console.warn('Не удалось загрузить метаданные матча, используем значения по умолчанию');
                     }
                 } catch(e) {
-                    console.warn('Ошибка при запросе метаданных:', e);
+                    console.warn('Ошибка при получении метаданных:', e);
                 }
             }
             
@@ -493,7 +484,6 @@
             const team1Name = team1Data.name;
             const team2Name = team2Data.name;
             
-            // 4. Подсчёт побед по картам
             let team1Wins = 0, team2Wins = 0;
             const maps = [];
             for (let i = 0; i < team1Data.games.length && i < team2Data.games.length; i++) {
@@ -506,7 +496,6 @@
                 if (score1 > score2) team1Wins++; else team2Wins++;
                 
                 const stats = [];
-                // Команда 1
                 for (const [hash, stat] of Object.entries(game1.stats)) {
                     const playerObj = team1Data.players.find(p => p.hash === hash);
                     const playerName = playerObj ? playerObj.gameNick : hash;
@@ -519,13 +508,9 @@
                         accuracy: stat.accuracy || 0,
                         clutches: 0,
                         multikills: 0,
-                        revives: stat.resurrects || 0,
-                        bombs_planted: stat.bombs_planted || 0,
-                        bombs_defused: stat.bombs_defused || 0,
-                        explode_kills: stat.explode_kills || 0
+                        revives: stat.resurrects || 0
                     });
                 }
-                // Команда 2
                 for (const [hash, stat] of Object.entries(game2.stats)) {
                     const playerObj = team2Data.players.find(p => p.hash === hash);
                     const playerName = playerObj ? playerObj.gameNick : hash;
@@ -538,10 +523,7 @@
                         accuracy: stat.accuracy || 0,
                         clutches: 0,
                         multikills: 0,
-                        revives: stat.resurrects || 0,
-                        bombs_planted: stat.bombs_planted || 0,
-                        bombs_defused: stat.bombs_defused || 0,
-                        explode_kills: stat.explode_kills || 0
+                        revives: stat.resurrects || 0
                     });
                 }
                 maps.push({
@@ -551,10 +533,7 @@
                     stats: stats
                 });
             }
-            
             const matchScore = `${team1Wins}:${team2Wins}`;
-            
-            // 5. Составы команд
             const teams = [
                 {
                     name: team1Name,
@@ -565,9 +544,7 @@
                     players: team2Data.players.filter(p => p.role === 1 || p.role === 2).slice(0,5).map(p => ({ name: p.gameNick, role: p.isCaptain ? 'Капитан' : 'Игрок' }))
                 }
             ];
-            
             const finalId = matchId ? parseInt(matchId) : Date.now();
-            
             const finalData = {
                 id: finalId,
                 date: matchDate,
@@ -578,7 +555,6 @@
                 maps_json: maps,
                 teams_json: teams
             };
-            
             await fetch(API_URL, {
                 method: 'POST',
                 mode: 'no-cors',
