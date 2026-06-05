@@ -3,40 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astrum League | Статистика и рейтинг</title>
+    <title>Astrum League | Статистика Warface</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0A0C12; font-family: 'Inter', sans-serif; color: #E8EDF2; line-height: 1.4; }
         .container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
-        header { background: #0F1219; border-bottom: 1px solid #1E2530; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .logo { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #FFF, #B8860B); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        nav a { color: #D3DCE8; text-decoration: none; margin: 0 15px; font-weight: 600; cursor: pointer; }
+        header { background: #0F1219; border-bottom: 1px solid #1E2530; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .logo { font-size: 1.6rem; font-weight: 800; background: linear-gradient(135deg, #FFF, #B8860B); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        nav a { color: #D3DCE8; text-decoration: none; margin: 0 15px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         nav a:hover, nav a.active { color: #F5A623; }
         .page { display: none; padding: 20px 0; }
         .page.active { display: block; }
-        .card { background: #0F1219; border: 1px solid #1E2530; border-radius: 12px; margin-bottom: 20px; }
-        .card-header { padding: 15px 20px; border-bottom: 1px solid #1E2530; background: #12161F; font-weight: 700; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .match-row { display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #1A2028; cursor: pointer; }
+        .card { background: #0F1219; border: 1px solid #1E2530; border-radius: 12px; margin-bottom: 25px; overflow: hidden; }
+        .card-header { padding: 15px 20px; border-bottom: 1px solid #1E2530; background: #12161F; font-weight: 700; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .match-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #1A2028; cursor: pointer; transition: 0.1s; }
         .match-row:hover { background: #161C26; }
-        .team { display: flex; align-items: center; gap: 8px; }
-        .vs { color: #F5A623; margin: 0 10px; }
-        .score { color: #F5A623; font-weight: 800; }
-        .map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+        .match-teams { display: flex; align-items: center; gap: 25px; font-weight: 600; }
+        .team { display: flex; align-items: center; gap: 10px; min-width: 130px; }
+        .team i { width: 24px; font-size: 1.2rem; }
+        .vs { color: #F5A623; font-weight: 800; font-size: 0.9rem; }
+        .match-info { text-align: right; }
+        .score { font-weight: 800; font-size: 1.1rem; color: #F5A623; font-family: monospace; margin-left: 15px; }
+        .event-name { font-size: 0.7rem; background: #1A212C; padding: 3px 8px; border-radius: 20px; display: inline-block; margin-top: 5px; }
+        .btn { background: #1E2A36; border: none; color: #F5A623; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .btn:hover { background: #2A3A48; }
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .stats-table th, .stats-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #1A2028; }
+        .stats-table th { background: #12161F; color: #F5A623; font-weight: 600; }
+        .player-link, .team-link { color: #F5A623; cursor: pointer; text-decoration: none; }
+        .player-link:hover, .team-link:hover { text-decoration: underline; }
+        .period-selector { display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+        .period-btn { background: #1E2A36; padding: 5px 14px; border-radius: 30px; cursor: pointer; font-size: 0.75rem; transition: 0.2s; }
+        .period-btn.active { background: #F5A623; color: #0A0C12; }
+        .compare-block { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+        .compare-card { flex: 1; background: #12161F; border-radius: 12px; padding: 16px; border: 1px solid #1E2530; }
+        .map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin: 15px 0; }
         .map-card { background: #12161F; border-radius: 10px; padding: 12px; border: 1px solid #1E2530; cursor: pointer; transition: 0.2s; }
         .map-card:hover { background: #1A212C; transform: translateY(-2px); border-color: #F5A623; }
         .map-name { font-weight: 700; color: #F5A623; margin-bottom: 8px; }
-        .stats-table { width: 100%; border-collapse: collapse; }
-        .stats-table th, .stats-table td { padding: 10px; text-align: left; border-bottom: 1px solid #1A2028; }
-        .stats-table th { color: #F5A623; cursor: pointer; user-select: none; }
-        .player-link { color: #F5A623; cursor: pointer; text-decoration: none; }
-        .player-link:hover { text-decoration: underline; }
-        .btn { background: #1E2A36; border: none; color: #F5A623; padding: 6px 14px; border-radius: 20px; cursor: pointer; }
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #0F1219; max-width: 700px; width: 90%; padding: 20px; border-radius: 16px; max-height: 80vh; overflow-y: auto; }
-        .close-modal { float: right; cursor: pointer; font-size: 1.5rem; }
-        @media (max-width: 800px) { nav { margin-top: 10px; } }
+        .team-roster { display: flex; flex-wrap: wrap; gap: 12px; padding: 15px; }
+        .player-card { background: #12161F; border-radius: 8px; padding: 8px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s; }
+        .player-card:hover { background: #1A212C; transform: translateY(-1px); }
+        .player-avatar { width: 32px; height: 32px; background: #2A313C; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #F5A623; }
+        .footer { border-top: 1px solid #1E2530; padding: 25px 0; text-align: center; font-size: 0.75rem; color: #5F6C7E; margin-top: 30px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #0F1219; max-width: 750px; width: 90%; padding: 20px; border-radius: 16px; max-height: 85vh; overflow-y: auto; }
+        .close-modal { float: right; cursor: pointer; font-size: 1.8rem; line-height: 1; }
+        .impact-high { color: #F5A623; font-weight: bold; }
+        @media (max-width: 800px) { .match-teams { flex-direction: column; align-items: flex-start; gap: 5px; } .match-info { text-align: left; margin-top: 8px; } }
     </style>
 </head>
 <body>
@@ -56,192 +72,240 @@
 
 <script>
     // ========== НАСТРОЙКИ ==========
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwo6h_cYvQKZ4BLB2BZY45sgJz6n9f7jdVnAEbHVh9wiGPdnrN9xTO-jH39COJRF8sUWw/exec'; // замените на URL вашего Google Apps Script
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzmflU5KQEfbU1xNecGhrQXWRtJ34MYYY2VGfzLb1eoxuxOPJ1q0EIGCNpp5f4QmeYpjA/exec'; // замените на URL вашего Apps Script
     let matchesData = [];
+    let playersData = [];
     let currentPage = 'overview';
     let currentMatch = null;
     let currentMapDetail = null;
+    let currentPlayer = null;
+    let ratingPeriod = 'all';
 
-    async function loadMatches() {
+    async function loadData() {
         try {
-            const res = await fetch(`${API_URL}?action=getMatches`);
-            const data = await res.json();
-            matchesData = data.matches || [];
-            renderOverview();
-            renderMatchesList();
-            renderRatingTable();
+            const [matchesRes, playersRes] = await Promise.all([
+                fetch(`${API_URL}?action=getMatches`),
+                fetch(`${API_URL}?action=getPlayers&period=${ratingPeriod}`)
+            ]);
+            const matchesJson = await matchesRes.json();
+            matchesData = matchesJson.matches || [];
+            const playersJson = await playersRes.json();
+            // Ваш скрипт возвращает { players: [...] } или { игроки: [...] }
+            playersData = playersJson.players || playersJson.игроки || [];
+            render();
         } catch(e) {
             console.error(e);
-            document.getElementById('overview-page').innerHTML = '<div class="card"><div class="card-header">Ошибка загрузки</div><div class="match-row">Не удалось загрузить данные.</div></div>';
+            document.getElementById('overview-page').innerHTML = '<div class="card"><div class="card-header">Ошибка загрузки</div><div class="match-row">Не удалось загрузить данные. Проверьте подключение.</div></div>';
         }
     }
 
+    function render() {
+        if (currentPage === 'overview') renderOverview();
+        else if (currentPage === 'matches') renderMatchesList();
+        else if (currentPage === 'rating') renderRatingUI();
+        else if (currentPage === 'match') renderMatchDetail();
+        else if (currentPage === 'mapDetail') renderMapDetail();
+        else if (currentPage === 'player') renderPlayerDetail();
+    }
+
     function renderOverview() {
-        const lastMatches = matchesData.slice(-8).reverse();
-        let html = `<div class="card"><div class="card-header">Последние матчи</div>`;
-        lastMatches.forEach(m => {
+        const recent = matchesData.slice(-6).reverse();
+        let html = `<div class="grid-2"><div><div class="card"><div class="card-header"><i class="fas fa-fire"></i> Последние матчи</div>`;
+        recent.forEach(m => {
             html += `<div class="match-row" data-match-id="${m.id}">
-                        <div class="team">${m.team1}</div><div class="vs">VS</div><div class="team">${m.team2}</div>
-                        <div><span class="score">${m.score}</span> <span style="margin-left:15px;">${m.date ? m.date.slice(0,10) : ''}</span></div>
+                        <div class="match-teams">
+                            <div class="team"><i class="fas fa-shield-alt"></i> <span class="team-link" data-team="${m.team1}">${m.team1}</span></div>
+                            <div class="vs">VS</div>
+                            <div class="team"><i class="fas fa-skull"></i> <span class="team-link" data-team="${m.team2}">${m.team2}</span></div>
+                        </div>
+                        <div class="match-info"><span class="score">${m.score}</span><div class="event-name">${m.date}</div></div>
                     </div>`;
         });
-        html += `</div><div class="card"><div class="card-header">Информация</div><div class="match-row">Всего матчей: ${matchesData.length}</div></div>`;
+        html += `</div><div class="card"><div class="card-header">Информация</div><div class="match-row">Всего матчей: ${matchesData.length}</div><div class="match-row">Источник: официальные данные VK Play</div></div></div>
+                  <div class="card"><div class="card-header">Топ-5 игроков по Impact</div><div class="team-roster">`;
+        const top5 = [...playersData].sort((a,b) => parseFloat(b.impact) - parseFloat(a.impact)).slice(0,5);
+        top5.forEach(p => {
+            html += `<div class="player-card" data-player="${p.name || p.имя}"><div class="player-avatar">${(p.name || p.имя)[0]}</div><div><strong>${p.name || p.имя}</strong><br>Impact: ${p.impact || p.влияние}</div></div>`;
+        });
+        html += `</div></div></div>`;
         document.getElementById('overview-page').innerHTML = html;
         attachMatchClick();
+        attachTeamLinks();
+        attachPlayerClicks();
     }
 
     function renderMatchesList() {
-        let html = `<div class="card"><div class="card-header">Все матчи</div>`;
+        let html = `<div class="card"><div class="card-header">Все матчи (${matchesData.length})</div>`;
         matchesData.forEach(m => {
-            html += `<div class="match-row" data-match-id="${m.id}"><div class="team">${m.team1}</div><div class="vs">VS</div><div class="team">${m.team2}</div><div><span class="score">${m.score}</span> ${m.date ? m.date.slice(0,10) : ''}</div></div>`;
+            html += `<div class="match-row" data-match-id="${m.id}">
+                        <div class="match-teams">
+                            <div class="team"><i class="fas fa-shield-alt"></i> ${m.team1}</div>
+                            <div class="vs">VS</div>
+                            <div class="team"><i class="fas fa-skull"></i> ${m.team2}</div>
+                        </div>
+                        <div class="match-info"><span class="score">${m.score}</span><div class="event-name">${m.date}</div></div>
+                    </div>`;
         });
         html += `</div>`;
         document.getElementById('matches-page').innerHTML = html;
         attachMatchClick();
     }
 
-    function showMatchDetail(match) {
-        currentMatch = match;
+    function renderMatchDetail() {
+        const match = currentMatch;
+        if (!match) return;
         const maps = match.maps_json || [];
-        let mapsHtml = `<div class="card"><div class="card-header">Карты (кликните для детальной статистики)</div><div class="map-grid">`;
-        maps.forEach((map, idx) => {
-            mapsHtml += `<div class="map-card" data-map-index="${idx}">
-                            <div class="map-name">${map.name}</div>
-                            <div class="score" style="font-size:1.2rem;">${map.score}</div>
-                            <div>Победитель: ${map.winner}</div>
-                         </div>`;
-        });
-        mapsHtml += `</div></div>`;
-
         const teams = match.teams_json || [];
-        let teamsHtml = `<div class="card"><div class="card-header">Составы команд</div>`;
-        teams.forEach(team => {
-            teamsHtml += `<div class="match-row"><strong>${team.name}</strong>: ${team.players.map(p => p.name).join(', ')}</div>`;
+        let mapsHtml = `<div class="card-header">Карты (Bo3) — кликните для статистики</div><div class="map-grid">`;
+        maps.forEach((map, idx) => {
+            mapsHtml += `<div class="map-card" data-map-idx="${idx}"><div class="map-name">${map.name}</div><div class="score" style="font-size:1.2rem;">${map.score}</div><div>Победитель: ${map.winner}</div></div>`;
         });
-        teamsHtml += `</div>`;
-
+        mapsHtml += `</div>`;
+        let teamsHtml = `<div class="card-header">Составы</div>`;
+        teams.forEach(team => {
+            teamsHtml += `<div><strong>${team.name}</strong><div class="team-roster">`;
+            (team.players || []).forEach(p => {
+                teamsHtml += `<div class="player-card" data-player="${p.name}"><div class="player-avatar">${p.name[0]}</div><div>${p.name} ${p.role ? '('+p.role+')' : ''}</div></div>`;
+            });
+            teamsHtml += `</div></div>`;
+        });
         let html = `<div class="card"><div class="card-header">${match.team1} vs ${match.team2} — ${match.score}</div>
-                    <div class="match-row">Дата: ${match.date ? match.date.slice(0,10) : ''}</div>
-                    </div>${mapsHtml}${teamsHtml}
-                    <div style="margin-top:20px;"><button class="btn" id="backMatches">← Назад к списку матчей</button></div>`;
+                    <div class="match-row">Дата: ${match.date} | Турнир: ${match.tournament || 'Astrum League'}</div>
+                    ${mapsHtml}
+                    ${teamsHtml}
+                    <div style="padding:15px;"><button class="btn" id="backMatches">← Назад</button></div>
+                    </div>`;
         document.getElementById('matches-page').innerHTML = html;
         document.getElementById('matches-page').classList.add('active');
         document.getElementById('overview-page').classList.remove('active');
         document.getElementById('rating-page').classList.remove('active');
         document.getElementById('backMatches').addEventListener('click', () => {
             currentPage = 'matches';
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('matches-page').classList.add('active');
-            renderMatchesList();
+            render();
         });
         document.querySelectorAll('.map-card').forEach(el => {
             el.addEventListener('click', (e) => {
-                const idx = parseInt(el.dataset.mapIndex);
-                const mapDetail = match.maps_json[idx];
+                const idx = parseInt(el.dataset.mapIdx);
+                const mapDetail = match.maps_json && match.maps_json[idx] ? match.maps_json[idx] : null;
                 if (mapDetail && mapDetail.stats && mapDetail.stats.length) {
-                    showMapStats(mapDetail);
+                    currentMapDetail = mapDetail;
+                    currentPage = 'mapDetail';
+                    render();
                 } else {
-                    alert('Детальная статистика для этой карты отсутствует.');
+                    alert('Детальная статистика по этой карте отсутствует.');
                 }
             });
-        });
-    }
-
-    function showMapStats(map) {
-        let html = `<div class="card"><div class="card-header">Карта: ${map.name} (${map.score})</div>
-                    <table class="stats-table">
-                        <thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></tr></thead>
-                        <tbody>`;
-        map.stats.forEach(stat => {
-            html += `<tr>
-                        <td class="player-link" data-player="${stat.player}">${stat.player}</td>
-                        <td>${stat.kills}</td><td>${stat.deaths}</td><td>${stat.assists}</td>
-                        <td>${stat.headshots}</td><td>${stat.accuracy}%</td>
-                        <td>${stat.clutches || 0}</td><td>${stat.multikills || 0}</td><td>${stat.revives || 0}</td>
-                     </tr>`;
-        });
-        html += `</tbody></table><div style="padding:15px;"><button class="btn" id="backToMatch">← Назад к матчу</button></div></div>`;
-        document.getElementById('matches-page').innerHTML = html;
-        document.getElementById('backToMatch').addEventListener('click', () => {
-            showMatchDetail(currentMatch);
         });
         attachPlayerClicks();
     }
 
-    async function renderRatingTable() {
-        try {
-            const res = await fetch(`${API_URL}?action=getPlayers`);
-            const players = await res.json();
-            let html = `<div class="card"><div class="card-header">🏆 Рейтинг игроков (Impact)</div>
-                        <table class="stats-table">
-                            <thead><tr><th>#</th><th>Игрок</th><th>Команда</th><th>Матчи</th><th>Убийства</th><th>K/D</th><th>Рейтинг</th></tr></thead>
-                            <tbody>`;
-            players.forEach((p, idx) => {
-                const kd = p.kd || (p.kills && p.deaths ? (p.kills/p.deaths).toFixed(2) : '0');
-                html += `<tr>
-                            <td>${idx+1}</td>
-                            <td class="player-link" data-player="${p.name}">${p.name}</td>
-                            <td>${p.team}</td><td>${p.matches}</td><td>${p.kills}</td>
-                            <td>${kd}</td><td class="score">${p.impact}</td>
-                         </tr>`;
-            });
-            html += `</tbody></table></div>`;
-            document.getElementById('rating-page').innerHTML = html;
-            attachPlayerClicks();
-        } catch(e) {
-            console.error(e);
-            document.getElementById('rating-page').innerHTML = '<div class="card"><div class="card-header">Ошибка загрузки рейтинга</div></div>';
-        }
+    function renderMapDetail() {
+        const map = currentMapDetail;
+        if (!map) return;
+        let html = `<div class="card"><div class="card-header">Карта: ${map.name} — ${map.score}</div>
+                    <table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></table></thead><tbody>`;
+        map.stats.forEach(s => {
+            html += `<tr><td class="player-link" data-player="${s.player}">${s.player}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.assists || 0}</td><td>${s.headshots || 0}</td><td>${s.accuracy || 0}%</td><td>${s.clutches || 0}</td><td>${s.multikills || 0}</td><td>${s.revives || 0}</td></tr>`;
+        });
+        html += `</tbody></table><div style="padding:15px;"><button class="btn" id="backMatch">← Назад к матчу</button></div></div>`;
+        document.getElementById('matches-page').innerHTML = html;
+        document.getElementById('matches-page').classList.add('active');
+        document.getElementById('overview-page').classList.remove('active');
+        document.getElementById('rating-page').classList.remove('active');
+        document.getElementById('backMatch').addEventListener('click', () => {
+            currentPage = 'match';
+            render();
+        });
+        attachPlayerClicks();
+    }
+
+    function renderRatingUI() {
+        const sorted = [...playersData].sort((a,b) => parseFloat(b.impact || b.влияние) - parseFloat(a.impact || a.влияние));
+        let html = `<div class="card"><div class="card-header">
+                        <span>🏆 Рейтинг игроков (Impact)</span>
+                    </div>
+                    <table class="stats-table"><thead><tr><th>#</th><th>Игрок</th><th>Команда</th><th>Матчи</th><th>Убийства</th><th>K/D</th><th>Хэдшоты%</th><th>Impact</th></tr></thead><tbody>`;
+        sorted.forEach((p, idx) => {
+            const name = p.name || p.имя;
+            const team = p.team || p.команда;
+            const matches = p.matches || p.совпадения;
+            const kills = p.kills || p.убийств;
+            const deaths = p.deaths || p.смертей;
+            const headshots = p.headshots || p.портреты;
+            const impact = p.impact || p.влияние;
+            const kd = deaths ? (kills / deaths).toFixed(2) : '0';
+            const hsPercent = kills ? ((headshots / kills) * 100).toFixed(1) : '0';
+            html += `<tr><td class="impact-high">${idx+1}</td><td class="player-link" data-player="${name}">${name}</td><td>${team || '?'}</td><td>${matches}</td><td>${kills}</td><td>${kd}</td><td>${hsPercent}%</td><td class="impact-high">${impact}</td></tr>`;
+        });
+        html += `</tbody><tr></div>`;
+        document.getElementById('rating-page').innerHTML = html;
+        attachPlayerClicks();
+    }
+
+    async function renderPlayerDetail() {
+        if (!currentPlayer) return;
+        const name = currentPlayer.name || currentPlayer.имя;
+        // Здесь можно было бы запросить детальную статистику игрока через API, но для простоты показываем то, что есть
+        const player = playersData.find(p => (p.name || p.имя) === name);
+        if (!player) return;
+        const kd = player.deaths ? (player.kills / player.deaths).toFixed(2) : '0';
+        const hsPercent = player.kills ? ((player.headshots / player.kills) * 100).toFixed(1) : '0';
+        let html = `<div class="card"><div class="card-header">${name} (${player.team || player.команда})</div>
+                    <table class="stats-table"><tbody>
+                        <tr><td style="color:#F5A623;">Матчи</td><td>${player.matches || player.совпадения}</td></tr>
+                        <tr><td style="color:#F5A623;">Убийства</td><td>${player.kills || player.убийств}</td></tr>
+                        <tr><td style="color:#F5A623;">Смерти</td><td>${player.deaths || player.смертей}</td></tr>
+                        <tr><td style="color:#F5A623;">K/D</td><td>${kd}</td></tr>
+                        <tr><td style="color:#F5A623;">Ассисты</td><td>${player.assists || player.ассисты || 0}</td></tr>
+                        <tr><td style="color:#F5A623;">Хэдшоты</td><td>${player.headshots || player.портреты || 0} (${hsPercent}%)</td></tr>
+                        <tr><td style="color:#F5A623;">Точность</td><td>${player.accuracy || player.точность || 0}%</td></tr>
+                        <tr><td style="color:#F5A623;">Клатчи</td><td>${player.clutches || player.сцепления || 0}</td></tr>
+                        <tr><td style="color:#F5A623;">Мультикиллы</td><td>${player.multikills || player.множественные_убийства || 0}</td></tr>
+                        <tr><td style="color:#F5A623;">Реанимации</td><td>${player.revives || player.возраждается || 0}</td></tr>
+                        <tr><td style="color:#F5A623;">Impact рейтинг</td><td class="impact-high">${player.impact || player.влияние}</td></tr>
+                    </tbody></table>
+                    <div style="padding:15px;"><button class="btn" id="backRating">← Назад к рейтингу</button></div>
+                    </div>`;
+        document.getElementById('rating-page').innerHTML = html;
+        document.getElementById('rating-page').classList.add('active');
+        document.getElementById('overview-page').classList.remove('active');
+        document.getElementById('matches-page').classList.remove('active');
+        document.getElementById('backRating').addEventListener('click', () => {
+            currentPage = 'rating';
+            render();
+        });
     }
 
     function attachMatchClick() {
         document.querySelectorAll('.match-row[data-match-id]').forEach(el => {
-            el.addEventListener('click', () => {
+            el.addEventListener('click', (e) => {
+                if (e.target.classList.contains('team-link')) return;
                 const id = parseInt(el.dataset.matchId);
-                const match = matchesData.find(m => m.id === id);
-                if (match) {
-                    currentMatch = match;
-                    showMatchDetail(match);
+                currentMatch = matchesData.find(m => m.id === id);
+                if (currentMatch) {
+                    currentPage = 'match';
+                    render();
                 }
             });
         });
     }
-
+    function attachTeamLinks() {
+        document.querySelectorAll('.team-link').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                alert(`Страница команды "${el.dataset.team}" в разработке.`);
+            });
+        });
+    }
     function attachPlayerClicks() {
-        document.querySelectorAll('.player-link').forEach(el => {
-            el.addEventListener('click', async (e) => {
-                const playerName = el.dataset.player;
-                if (!playerName) return;
-                try {
-                    const res = await fetch(`${API_URL}?action=getPlayer&name=${encodeURIComponent(playerName)}`);
-                    const p = await res.json();
-                    const hsPercent = p.kills ? ((p.headshots/p.kills)*100).toFixed(1) : '0';
-                    let html = `<div class="card"><div class="card-header">${p.name} (${p.team})</div>
-                                <table class="stats-table"><tbody>
-                                    <tr><td style="color:#F5A623;">Матчи</td><td>${p.matches}</td></tr>
-                                    <tr><td style="color:#F5A623;">Победы</td><td>${p.wins} (${p.winrate}%)</td></tr>
-                                    <tr><td style="color:#F5A623;">Убийства</td><td>${p.kills}</td></tr>
-                                    <tr><td style="color:#F5A623;">Смерти</td><td>${p.deaths}</td></tr>
-                                    <tr><td style="color:#F5A623;">K/D</td><td>${p.kd}</td></tr>
-                                    <tr><td style="color:#F5A623;">Ассисты</td><td>${p.assists}</td></tr>
-                                    <tr><td style="color:#F5A623;">Хэдшоты</td><td>${p.headshots} (${hsPercent}%)</td></tr>
-                                    <tr><td style="color:#F5A623;">Точность</td><td>${p.accuracy}%</td></tr>
-                                    <tr><td style="color:#F5A623;">Клатчи</td><td>${p.clutches}</td></tr>
-                                    <tr><td style="color:#F5A623;">Мультикиллы</td><td>${p.multikills}</td></tr>
-                                    <tr><td style="color:#F5A623;">Реанимации</td><td>${p.revives}</td></tr>
-                                    <tr><td style="color:#F5A623;">Impact рейтинг</td><td><strong>${p.impact}</strong></td></tr>
-                                </tbody></table>
-                                <div style="padding:15px;"><button class="btn" id="backRating">← Назад к рейтингу</button></div></div>`;
-                    document.getElementById('rating-page').innerHTML = html;
-                    document.getElementById('rating-page').classList.add('active');
-                    document.getElementById('overview-page').classList.remove('active');
-                    document.getElementById('matches-page').classList.remove('active');
-                    document.getElementById('backRating').addEventListener('click', () => {
-                        renderRatingTable();
-                        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                        document.getElementById('rating-page').classList.add('active');
-                    });
-                } catch(e) { console.error(e); alert('Ошибка загрузки данных игрока'); }
+        document.querySelectorAll('.player-card, .player-link').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const name = el.closest('[data-player]')?.dataset.player || el.dataset.player;
+                if (name) {
+                    currentPlayer = { name: name };
+                    currentPage = 'player';
+                    render();
+                }
             });
         });
     }
@@ -251,21 +315,13 @@
             document.querySelectorAll('nav a').forEach(l => l.classList.remove('active'));
             link.classList.add('active');
             currentPage = link.dataset.page;
+            render();
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            if (currentPage === 'overview') {
-                document.getElementById('overview-page').classList.add('active');
-                renderOverview();
-            } else if (currentPage === 'matches') {
-                document.getElementById('matches-page').classList.add('active');
-                renderMatchesList();
-            } else if (currentPage === 'rating') {
-                document.getElementById('rating-page').classList.add('active');
-                renderRatingTable();
-            }
+            document.getElementById(`${currentPage}-page`).classList.add('active');
         });
     });
 
-    loadMatches();
+    loadData();
 </script>
 
 <!-- ========== АДМИН-ПАНЕЛЬ (Alt+M) ========== -->
@@ -313,23 +369,19 @@
             document.getElementById('adminAuthModal').style.display = 'flex';
         }
     });
-
     const authModal = document.getElementById('adminAuthModal');
     const panelModal = document.getElementById('adminPanelModal');
     const closeAuth = document.querySelector('.close-admin-auth');
     const closePanel = document.querySelector('.close-admin-panel');
     const cancelAuth = document.getElementById('cancelAdminAuth');
-
     closeAuth.onclick = () => { authModal.style.display = 'none'; clearAuth(); };
     closePanel.onclick = () => panelModal.style.display = 'none';
     cancelAuth.onclick = () => { authModal.style.display = 'none'; clearAuth(); };
     window.onclick = (e) => { if (e.target === authModal) { authModal.style.display = 'none'; clearAuth(); } if (e.target === panelModal) panelModal.style.display = 'none'; };
-
     function clearAuth() {
         document.getElementById('adminPasswordAuth').value = '';
         document.getElementById('adminAuthError').innerText = '';
     }
-
     document.getElementById('submitAdminPassword').onclick = () => {
         const pwd = document.getElementById('adminPasswordAuth').value;
         if (pwd === ADMIN_PASSWORD) {
@@ -340,7 +392,6 @@
             document.getElementById('adminAuthError').innerText = 'Неверный пароль';
         }
     };
-
     async function loadMatchIds() {
         try {
             const res = await fetch(`${API_URL}?action=getMatches`);
@@ -351,34 +402,23 @@
             document.getElementById('matchIdsList').innerText = 'ошибка загрузки';
         }
     }
-
     document.getElementById('deleteMatchBtn').onclick = async () => {
         const id = parseInt(document.getElementById('deleteMatchId').value);
         if (!id) return alert('Введите ID матча');
         if (!confirm(`Удалить матч ID ${id}?`)) return;
         try {
-            await fetch(API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', id: id })
-            });
+            await fetch(API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id: id }) });
             alert('Запрос на удаление отправлен. Обновите страницу через минуту.');
             setTimeout(() => location.reload(), 2000);
-        } catch(e) {
-            alert('Ошибка отправки');
-        }
+        } catch(e) { alert('Ошибка отправки'); }
     };
-
     document.getElementById('uploadStatsBtn').onclick = async () => {
         const file = document.getElementById('statFile').files[0];
         if (!file) return alert('Выберите JSON файл');
         const text = await file.text();
         try {
             const json = JSON.parse(text);
-            if (!json.games || json.games.length < 2) {
-                throw new Error('Файл не содержит статистику матча (нет поля games)');
-            }
+            if (!json.games || json.games.length < 2) throw new Error('Файл не содержит статистику матча (нет поля games)');
             let matchId = null;
             const fileName = file.name;
             const matchIdMatch = fileName.match(/(\d+)(?:_stats)?\.json$/);
@@ -395,98 +435,42 @@
                     }
                 } catch(e) { console.warn(e); }
             }
-            const team1Data = json.games[0];
-            const team2Data = json.games[1];
-            const team1Name = team1Data.name;
-            const team2Name = team2Data.name;
+            const team1Data = json.games[0], team2Data = json.games[1];
+            const team1Name = team1Data.name, team2Name = team2Data.name;
             let team1Wins = 0, team2Wins = 0;
             const maps = [];
             for (let i = 0; i < team1Data.games.length && i < team2Data.games.length; i++) {
-                const game1 = team1Data.games[i];
-                const game2 = team2Data.games[i];
+                const game1 = team1Data.games[i], game2 = team2Data.games[i];
                 const mapName = game1.map;
-                const score1 = game1.score;
-                const score2 = game2.score;
+                const score1 = game1.score, score2 = game2.score;
                 const winner = score1 > score2 ? team1Name : team2Name;
                 if (score1 > score2) team1Wins++; else team2Wins++;
                 const stats = [];
                 for (const [hash, stat] of Object.entries(game1.stats)) {
                     const playerObj = team1Data.players.find(p => p.hash === hash);
                     const playerName = playerObj ? playerObj.gameNick : hash;
-                    stats.push({
-                        player: playerName,
-                        kills: stat.kills || 0,
-                        deaths: stat.deaths || 0,
-                        assists: 0,
-                        headshots: stat.head_kills || 0,
-                        accuracy: stat.accuracy || 0,
-                        clutches: 0,
-                        multikills: 0,
-                        revives: stat.resurrects || 0
-                    });
+                    stats.push({ player: playerName, kills: stat.kills, deaths: stat.deaths, assists: 0, headshots: stat.head_kills, accuracy: stat.accuracy, clutches: 0, multikills: 0, revives: stat.resurrects });
                 }
                 for (const [hash, stat] of Object.entries(game2.stats)) {
                     const playerObj = team2Data.players.find(p => p.hash === hash);
                     const playerName = playerObj ? playerObj.gameNick : hash;
-                    stats.push({
-                        player: playerName,
-                        kills: stat.kills || 0,
-                        deaths: stat.deaths || 0,
-                        assists: 0,
-                        headshots: stat.head_kills || 0,
-                        accuracy: stat.accuracy || 0,
-                        clutches: 0,
-                        multikills: 0,
-                        revives: stat.resurrects || 0
-                    });
+                    stats.push({ player: playerName, kills: stat.kills, deaths: stat.deaths, assists: 0, headshots: stat.head_kills, accuracy: stat.accuracy, clutches: 0, multikills: 0, revives: stat.resurrects });
                 }
-                maps.push({
-                    name: mapName,
-                    score: `${score1}:${score2}`,
-                    winner: winner,
-                    stats: stats
-                });
+                maps.push({ name: mapName, score: `${score1}:${score2}`, winner, stats });
             }
             const matchScore = `${team1Wins}:${team2Wins}`;
             const teams = [
-                {
-                    name: team1Name,
-                    players: team1Data.players.filter(p => p.role === 1 || p.role === 2).slice(0,5).map(p => ({ name: p.gameNick, role: p.isCaptain ? 'Капитан' : 'Игрок' }))
-                },
-                {
-                    name: team2Name,
-                    players: team2Data.players.filter(p => p.role === 1 || p.role === 2).slice(0,5).map(p => ({ name: p.gameNick, role: p.isCaptain ? 'Капитан' : 'Игрок' }))
-                }
+                { name: team1Name, players: team1Data.players.filter(p => p.role === 1 || p.role === 2).slice(0,5).map(p => ({ name: p.gameNick, role: p.isCaptain ? 'Капитан' : 'Игрок' })) },
+                { name: team2Name, players: team2Data.players.filter(p => p.role === 1 || p.role === 2).slice(0,5).map(p => ({ name: p.gameNick, role: p.isCaptain ? 'Капитан' : 'Игрок' })) }
             ];
             const finalId = matchId ? parseInt(matchId) : Date.now();
-            const finalData = {
-                id: finalId,
-                date: matchDate,
-                tournament: tournamentName,
-                team1: team1Name,
-                team2: team2Name,
-                score: matchScore,
-                maps_json: maps,
-                teams_json: teams
-            };
-            await fetch(API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'add', ...finalData })
-            });
+            const finalData = { id: finalId, date: matchDate, tournament: tournamentName, team1: team1Name, team2: team2Name, score: matchScore, maps_json: maps, teams_json: teams };
+            await fetch(API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', ...finalData }) });
             document.getElementById('uploadStatus').innerHTML = '✅ Матч отправлен! Обновите страницу через минуту.';
             setTimeout(() => location.reload(), 2000);
-        } catch(e) {
-            console.error(e);
-            document.getElementById('uploadStatus').innerHTML = '❌ Ошибка: ' + e.message;
-        }
+        } catch(e) { console.error(e); document.getElementById('uploadStatus').innerHTML = '❌ Ошибка: ' + e.message; }
     };
-
-    document.getElementById('logoutAdminBtn').onclick = () => {
-        panelModal.style.display = 'none';
-        alert('Вы вышли из админ-панели');
-    };
+    document.getElementById('logoutAdminBtn').onclick = () => { panelModal.style.display = 'none'; alert('Вы вышли из админ-панели'); };
 </script>
 </body>
 </html>
