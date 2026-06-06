@@ -52,6 +52,11 @@
         .modal-content { background: #0F1219; max-width: 750px; width: 90%; padding: 20px; border-radius: 16px; max-height: 85vh; overflow-y: auto; }
         .close-modal { float: right; cursor: pointer; font-size: 1.8rem; line-height: 1; }
         .impact-high { color: #F5A623; font-weight: bold; }
+        .tabs { display: flex; gap: 8px; padding: 10px 20px; background: #12161F; border-bottom: 1px solid #1E2530; flex-wrap: wrap; }
+        .tab-btn { background: #1E2A36; border: none; color: #AAA; padding: 8px 16px; border-radius: 30px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .tab-btn.active { background: #F5A623; color: #0A0C12; }
+        .tab-content { display: none; padding: 15px; }
+        .tab-content.active { display: block; }
         @media (max-width: 800px) { .match-teams { flex-direction: column; align-items: flex-start; gap: 5px; } .match-info { text-align: left; margin-top: 8px; } }
     </style>
 </head>
@@ -72,14 +77,25 @@
 
 <script>
     // ========== НАСТРОЙКИ ==========
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzmflU5KQEfbU1xNecGhrQXWRtJ34MYYY2VGfzLb1eoxuxOPJ1q0EIGCNpp5f4QmeYpjA/exec'; // замените на URL вашего Apps Script
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzmflU5KQEfbU1xNecGhrQXWRtJ34MYYY2VGfzLb1eoxuxOPJ1q0EIGCNpp5f4QmeYpjA/exec'; 
     let matchesData = [];
     let playersData = [];
     let currentPage = 'overview';
     let currentMatch = null;
-    let currentMapDetail = null;
     let currentPlayer = null;
     let ratingPeriod = 'all';
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        let d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        let day = String(d.getDate()).padStart(2,'0');
+        let month = String(d.getMonth()+1).padStart(2,'0');
+        let year = d.getFullYear();
+        let hours = String(d.getHours()).padStart(2,'0');
+        let minutes = String(d.getMinutes()).padStart(2,'0');
+        return `${day}.${month}.${year} ${hours}:${minutes}`;
+    }
 
     async function loadData() {
         try {
@@ -90,7 +106,6 @@
             const matchesJson = await matchesRes.json();
             matchesData = matchesJson.matches || [];
             const playersJson = await playersRes.json();
-            // Ваш скрипт возвращает { players: [...] } или { игроки: [...] }
             playersData = playersJson.players || playersJson.игроки || [];
             render();
         } catch(e) {
@@ -104,13 +119,12 @@
         else if (currentPage === 'matches') renderMatchesList();
         else if (currentPage === 'rating') renderRatingUI();
         else if (currentPage === 'match') renderMatchDetail();
-        else if (currentPage === 'mapDetail') renderMapDetail();
         else if (currentPage === 'player') renderPlayerDetail();
     }
 
     function renderOverview() {
         const recent = matchesData.slice(-6).reverse();
-        let html = `<div class="grid-2"><div><div class="card"><div class="card-header"><i class="fas fa-fire"></i> Последние матчи</div>`;
+        let html = `<div class="card"><div class="card-header"><i class="fas fa-fire"></i> Последние матчи</div>`;
         recent.forEach(m => {
             html += `<div class="match-row" data-match-id="${m.id}">
                         <div class="match-teams">
@@ -118,16 +132,17 @@
                             <div class="vs">VS</div>
                             <div class="team"><i class="fas fa-skull"></i> <span class="team-link" data-team="${m.team2}">${m.team2}</span></div>
                         </div>
-                        <div class="match-info"><span class="score">${m.score}</span><div class="event-name">${m.date}</div></div>
+                        <div class="match-info"><span class="score">${m.score}</span><div class="event-name">${m.date ? formatDate(m.date) : ''}</div></div>
                     </div>`;
         });
-        html += `</div><div class="card"><div class="card-header">Информация</div><div class="match-row">Всего матчей: ${matchesData.length}</div><div class="match-row">Источник: официальные данные VK Play</div></div></div>
+        html += `</div><div class="card"><div class="card-header">Информация</div><div class="match-row">Всего матчей: ${matchesData.length}</div></div>
                   <div class="card"><div class="card-header">Топ-5 игроков по Impact</div><div class="team-roster">`;
-        const top5 = [...playersData].sort((a,b) => parseFloat(b.impact) - parseFloat(a.impact)).slice(0,5);
+        const top5 = [...playersData].sort((a,b) => parseFloat(b.impact || b.влияние) - parseFloat(a.impact || a.влияние)).slice(0,5);
         top5.forEach(p => {
-            html += `<div class="player-card" data-player="${p.name || p.имя}"><div class="player-avatar">${(p.name || p.имя)[0]}</div><div><strong>${p.name || p.имя}</strong><br>Impact: ${p.impact || p.влияние}</div></div>`;
+            const name = p.name || p.имя;
+            html += `<div class="player-card" data-player="${name}"><div class="player-avatar">${name[0]}</div><div><strong>${name}</strong><br>Impact: ${p.impact || p.влияние}</div></div>`;
         });
-        html += `</div></div></div>`;
+        html += `</div></div>`;
         document.getElementById('overview-page').innerHTML = html;
         attachMatchClick();
         attachTeamLinks();
@@ -143,7 +158,7 @@
                             <div class="vs">VS</div>
                             <div class="team"><i class="fas fa-skull"></i> ${m.team2}</div>
                         </div>
-                        <div class="match-info"><span class="score">${m.score}</span><div class="event-name">${m.date}</div></div>
+                        <div class="match-info"><span class="score">${m.score}</span><div class="event-name">${m.date ? formatDate(m.date) : ''}</div></div>
                     </div>`;
         });
         html += `</div>`;
@@ -156,11 +171,70 @@
         if (!match) return;
         const maps = match.maps_json || [];
         const teams = match.teams_json || [];
-        let mapsHtml = `<div class="card-header">Карты (Bo3) — кликните для статистики</div><div class="map-grid">`;
-        maps.forEach((map, idx) => {
-            mapsHtml += `<div class="map-card" data-map-idx="${idx}"><div class="map-name">${map.name}</div><div class="score" style="font-size:1.2rem;">${map.score}</div><div>Победитель: ${map.winner}</div></div>`;
+        const matchDate = match.date ? formatDate(match.date) : '';
+
+        // Собираем общую статистику по всем картам
+        const allStats = new Map();
+        for (const map of maps) {
+            for (const stat of map.stats || []) {
+                if (!allStats.has(stat.player)) {
+                    allStats.set(stat.player, { kills:0, deaths:0, assists:0, headshots:0, accuracySum:0, accuracyCount:0, clutches:0, multikills:0, revives:0, matches:0 });
+                }
+                const p = allStats.get(stat.player);
+                p.kills += stat.kills || 0;
+                p.deaths += stat.deaths || 0;
+                p.assists += stat.assists || 0;
+                p.headshots += stat.headshots || 0;
+                p.accuracySum += stat.accuracy || 0;
+                p.accuracyCount++;
+                p.clutches += stat.clutches || 0;
+                p.multikills += stat.multikills || 0;
+                p.revives += stat.revives || 0;
+            }
+        }
+        const overallStats = [];
+        for (let [player, stats] of allStats) {
+            overallStats.push({
+                player: player,
+                kills: stats.kills,
+                deaths: stats.deaths,
+                assists: stats.assists,
+                headshots: stats.headshots,
+                accuracy: stats.accuracyCount ? (stats.accuracySum / stats.accuracyCount).toFixed(1) : '0',
+                clutches: stats.clutches,
+                multikills: stats.multikills,
+                revives: stats.revives
+            });
+        }
+
+        // Формируем вкладки
+        let tabsHtml = `<div class="tabs">
+            <button class="tab-btn active" data-tab="overall">Общая статистика</button>`;
+        for (let i = 0; i < maps.length; i++) {
+            tabsHtml += `<button class="tab-btn" data-tab="map${i}">Карта ${i+1}: ${maps[i].name}</button>`;
+        }
+        tabsHtml += `</div>`;
+
+        // Таблица общей статистики
+        let overallHtml = `<div class="tab-content active" id="tab-overall">
+            <table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></tr></thead><tbody>`;
+        overallStats.forEach(s => {
+            overallHtml += `<tr><td class="player-link" data-player="${s.player}">${s.player}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.assists}</td><td>${s.headshots}</td><td>${s.accuracy}%</td><td>${s.clutches}</td><td>${s.multikills}</td><td>${s.revives}</td></tr>`;
         });
-        mapsHtml += `</div>`;
+        overallHtml += `</tbody></table></div>`;
+
+        // Таблицы по картам
+        let mapsHtml = '';
+        for (let i = 0; i < maps.length; i++) {
+            const map = maps[i];
+            mapsHtml += `<div class="tab-content" id="tab-map${i}">
+                <table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></tr></thead><tbody>`;
+            (map.stats || []).forEach(s => {
+                mapsHtml += `<td><td class="player-link" data-player="${s.player}">${s.player}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.assists || 0}</td><td>${s.headshots || 0}</td><td>${s.accuracy || 0}%</td><td>${s.clutches || 0}</td><td>${s.multikills || 0}</td><td>${s.revives || 0}</td></tr>`;
+            });
+            mapsHtml += `</tbody></table></div>`;
+        }
+
         let teamsHtml = `<div class="card-header">Составы</div>`;
         teams.forEach(team => {
             teamsHtml += `<div><strong>${team.name}</strong><div class="team-roster">`;
@@ -169,11 +243,14 @@
             });
             teamsHtml += `</div></div>`;
         });
+
         let html = `<div class="card"><div class="card-header">${match.team1} vs ${match.team2} — ${match.score}</div>
-                    <div class="match-row">Дата: ${match.date} | Турнир: ${match.tournament || 'Astrum League'}</div>
+                    <div class="match-row">Дата: ${matchDate} | Турнир: ${match.tournament || 'Astrum League'}</div>
+                    ${tabsHtml}
+                    ${overallHtml}
                     ${mapsHtml}
                     ${teamsHtml}
-                    <div style="padding:15px;"><button class="btn" id="backMatches">← Назад</button></div>
+                    <div style="padding:15px;"><button class="btn" id="backMatches">← Назад к списку матчей</button></div>
                     </div>`;
         document.getElementById('matches-page').innerHTML = html;
         document.getElementById('matches-page').classList.add('active');
@@ -183,47 +260,23 @@
             currentPage = 'matches';
             render();
         });
-        document.querySelectorAll('.map-card').forEach(el => {
-            el.addEventListener('click', (e) => {
-                const idx = parseInt(el.dataset.mapIdx);
-                const mapDetail = match.maps_json && match.maps_json[idx] ? match.maps_json[idx] : null;
-                if (mapDetail && mapDetail.stats && mapDetail.stats.length) {
-                    currentMapDetail = mapDetail;
-                    currentPage = 'mapDetail';
-                    render();
-                } else {
-                    alert('Детальная статистика по этой карте отсутствует.');
-                }
-            });
-        });
-        attachPlayerClicks();
-    }
 
-    function renderMapDetail() {
-        const map = currentMapDetail;
-        if (!map) return;
-        let html = `<div class="card"><div class="card-header">Карта: ${map.name} — ${map.score}</div>
-                    <table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></table></thead><tbody>`;
-        map.stats.forEach(s => {
-            html += `<tr><td class="player-link" data-player="${s.player}">${s.player}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.assists || 0}</td><td>${s.headshots || 0}</td><td>${s.accuracy || 0}%</td><td>${s.clutches || 0}</td><td>${s.multikills || 0}</td><td>${s.revives || 0}</td></tr>`;
-        });
-        html += `</tbody></table><div style="padding:15px;"><button class="btn" id="backMatch">← Назад к матчу</button></div></div>`;
-        document.getElementById('matches-page').innerHTML = html;
-        document.getElementById('matches-page').classList.add('active');
-        document.getElementById('overview-page').classList.remove('active');
-        document.getElementById('rating-page').classList.remove('active');
-        document.getElementById('backMatch').addEventListener('click', () => {
-            currentPage = 'match';
-            render();
+        // Переключение вкладок
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tabId = btn.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                document.getElementById(`tab-${tabId}`).classList.add('active');
+            });
         });
         attachPlayerClicks();
     }
 
     function renderRatingUI() {
         const sorted = [...playersData].sort((a,b) => parseFloat(b.impact || b.влияние) - parseFloat(a.impact || a.влияние));
-        let html = `<div class="card"><div class="card-header">
-                        <span>🏆 Рейтинг игроков (Impact)</span>
-                    </div>
+        let html = `<div class="card"><div class="card-header">🏆 Рейтинг игроков (Impact)</div>
                     <table class="stats-table"><thead><tr><th>#</th><th>Игрок</th><th>Команда</th><th>Матчи</th><th>Убийства</th><th>K/D</th><th>Хэдшоты%</th><th>Impact</th></tr></thead><tbody>`;
         sorted.forEach((p, idx) => {
             const name = p.name || p.имя;
@@ -237,32 +290,46 @@
             const hsPercent = kills ? ((headshots / kills) * 100).toFixed(1) : '0';
             html += `<tr><td class="impact-high">${idx+1}</td><td class="player-link" data-player="${name}">${name}</td><td>${team || '?'}</td><td>${matches}</td><td>${kills}</td><td>${kd}</td><td>${hsPercent}%</td><td class="impact-high">${impact}</td></tr>`;
         });
-        html += `</tbody><tr></div>`;
+        html += `</tbody></table><div style="padding:15px;"><button class="btn" id="comparePlayers">Сравнить двух игроков</button></div></div>`;
         document.getElementById('rating-page').innerHTML = html;
         attachPlayerClicks();
+        document.getElementById('comparePlayers').addEventListener('click', () => {
+            alert('Сравнение игроков будет добавлено в следующей версии.');
+        });
     }
 
     async function renderPlayerDetail() {
         if (!currentPlayer) return;
-        const name = currentPlayer.name || currentPlayer.имя;
-        // Здесь можно было бы запросить детальную статистику игрока через API, но для простоты показываем то, что есть
-        const player = playersData.find(p => (p.name || p.имя) === name);
+        const player = playersData.find(p => (p.name || p.имя) === currentPlayer.name);
         if (!player) return;
-        const kd = player.deaths ? (player.kills / player.deaths).toFixed(2) : '0';
-        const hsPercent = player.kills ? ((player.headshots / player.kills) * 100).toFixed(1) : '0';
-        let html = `<div class="card"><div class="card-header">${name} (${player.team || player.команда})</div>
+        const name = player.name || player.имя;
+        const team = player.team || player.команда;
+        const matches = player.matches || player.совпадения;
+        const kills = player.kills || player.убийств;
+        const deaths = player.deaths || player.смертей;
+        const assists = player.assists || player.ассисты || 0;
+        const headshots = player.headshots || player.портреты || 0;
+        const accuracy = player.accuracy || player.точность || 0;
+        const clutches = player.clutches || player.сцепления || 0;
+        const multikills = player.multikills || player.множественные_убийства || 0;
+        const revives = player.revives || player.возраждается || 0;
+        const impact = player.impact || player.влияние;
+        const kd = deaths ? (kills / deaths).toFixed(2) : '0';
+        const hsPercent = kills ? ((headshots / kills) * 100).toFixed(1) : '0';
+
+        let html = `<div class="card"><div class="card-header">${name} (${team})</div>
                     <table class="stats-table"><tbody>
-                        <tr><td style="color:#F5A623;">Матчи</td><td>${player.matches || player.совпадения}</td></tr>
-                        <tr><td style="color:#F5A623;">Убийства</td><td>${player.kills || player.убийств}</td></tr>
-                        <tr><td style="color:#F5A623;">Смерти</td><td>${player.deaths || player.смертей}</td></tr>
+                        <tr><td style="color:#F5A623;">Матчи</td><td>${matches}</td></tr>
+                        <tr><td style="color:#F5A623;">Убийства</td><td>${kills}</td></tr>
+                        <tr><td style="color:#F5A623;">Смерти</td><td>${deaths}</td></tr>
                         <tr><td style="color:#F5A623;">K/D</td><td>${kd}</td></tr>
-                        <tr><td style="color:#F5A623;">Ассисты</td><td>${player.assists || player.ассисты || 0}</td></tr>
-                        <tr><td style="color:#F5A623;">Хэдшоты</td><td>${player.headshots || player.портреты || 0} (${hsPercent}%)</td></tr>
-                        <tr><td style="color:#F5A623;">Точность</td><td>${player.accuracy || player.точность || 0}%</td></tr>
-                        <tr><td style="color:#F5A623;">Клатчи</td><td>${player.clutches || player.сцепления || 0}</td></tr>
-                        <tr><td style="color:#F5A623;">Мультикиллы</td><td>${player.multikills || player.множественные_убийства || 0}</td></tr>
-                        <tr><td style="color:#F5A623;">Реанимации</td><td>${player.revives || player.возраждается || 0}</td></tr>
-                        <tr><td style="color:#F5A623;">Impact рейтинг</td><td class="impact-high">${player.impact || player.влияние}</td></tr>
+                        <tr><td style="color:#F5A623;">Ассисты</td><td>${assists}</td></tr>
+                        <tr><td style="color:#F5A623;">Хэдшоты</td><td>${headshots} (${hsPercent}%)</td></tr>
+                        <tr><td style="color:#F5A623;">Точность</td><td>${accuracy}%</td></tr>
+                        <tr><td style="color:#F5A623;">Клатчи</td><td>${clutches}</td></tr>
+                        <tr><td style="color:#F5A623;">Мультикиллы</td><td>${multikills}</td></tr>
+                        <tr><td style="color:#F5A623;">Реанимации</td><td>${revives}</td></tr>
+                        <tr><td style="color:#F5A623;">Impact рейтинг</td><td class="impact-high">${impact}</td></tr>
                     </tbody></table>
                     <div style="padding:15px;"><button class="btn" id="backRating">← Назад к рейтингу</button></div>
                     </div>`;
@@ -430,7 +497,7 @@
                     const metaRes = await fetch(`${API_URL}?action=getMatchMeta&id=${matchId}`);
                     if (metaRes.ok) {
                         const meta = await metaRes.json();
-                        if (meta.match && meta.match.startTime) matchDate = meta.match.startTime.slice(0,10);
+                        if (meta.match && meta.match.startTime) matchDate = meta.match.startTime;
                         if (meta.tournament && meta.tournament.name) tournamentName = meta.tournament.name;
                     }
                 } catch(e) { console.warn(e); }
