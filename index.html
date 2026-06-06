@@ -55,7 +55,13 @@
         .player-stats-grid { display: flex; gap: 30px; flex-wrap: wrap; }
         .stats-col { flex: 1; min-width: 200px; }
         .stats-col p { margin: 8px 0; }
-        .impact-rank { display: flex; align-items: center; gap: 10px; }
+        .impact-rank { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .map-card { background: #12161F; border-radius: 10px; padding: 12px; border: 1px solid #1E2530; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
+        .map-card:hover { background: #1A212C; transform: translateY(-2px); border-color: #F5A623; }
+        .map-name { font-weight: 700; color: #F5A623; margin-bottom: 8px; }
+        .map-winner { font-weight: bold; }
+        .winner-green { color: #4CAF50; }
+        .loser-red { color: #F5A623; }
         @media (max-width: 800px) { .burger { display: block; } nav { display: none; width: 100%; flex-direction: column; } nav.show { display: flex; } .match-teams { flex-direction: column; align-items: flex-start; gap: 5px; } .match-info { text-align: left; margin-top: 8px; } }
     </style>
 </head>
@@ -64,9 +70,9 @@
     <div class="logo">STATISTICS FOR <span>TOURNAMENTS</span></div>
     <div class="burger" id="burger"><i class="fas fa-bars"></i></div>
     <nav id="nav">
-        <a data-page="overview" class="active">Overview</a>
-        <a data-page="matches">Матчи</a>
-        <a data-page="rating">Рейтинг</a>
+        <a data-page="overview" style="color:#B39DDB;" class="active">Главная</a>
+        <a data-page="matches" style="color:#C62828;">Матчи</a>
+        <a data-page="rating" style="color:#FF9800;">Рейтинг</a>
     </nav>
 </header>
 <div class="container">
@@ -204,10 +210,10 @@
         function renderTeamTable(teamPlayersSet) {
             const players = Array.from(overallStats.entries()).filter(([name]) => teamPlayersSet.has(name));
             players.sort((a,b) => b[1].kills - a[1].kills);
-            let html = `<table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th><tr></thead><tbody>`;
+            let html = `<table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></td></thead><tbody>`;
             for (let [name, stats] of players) {
                 const acc = stats.accuracyCount ? (stats.accuracySum / stats.accuracyCount).toFixed(1) : '0';
-                html += `<tr><td class="player-link" data-player="${name}">${name}</td><td style="color:#F5A623;">${stats.kills}</td><td style="color:#F5A623;">${stats.deaths}</td><td style="color:#F5A623;">${stats.assists}</td><td style="color:#F5A623;">${stats.headshots}</td><td style="color:#F5A623;">${acc}%</td><td style="color:#F5A623;">${stats.clutches}</td><td style="color:#F5A623;">${stats.multikills}</td><td style="color:#F5A623;">${stats.revives}</td></tr>`;
+                html += `<td><td class="player-link" data-player="${name}">${name}</td><td style="color:#F5A623;">${stats.kills}</td><td style="color:#F5A623;">${stats.deaths}</td><td style="color:#F5A623;">${stats.assists}</td><td style="color:#F5A623;">${stats.headshots}</td><td style="color:#F5A623;">${acc}%</td><td style="color:#F5A623;">${stats.clutches}</td><td style="color:#F5A623;">${stats.multikills}</td><td style="color:#F5A623;">${stats.revives}</td></tr>`;
             }
             html += `</tbody></table>`;
             return html;
@@ -220,6 +226,21 @@
             ${renderTeamTable(new Set(team2Players))}
         </div>`;
         
+        // Карты: отображаем счетами и победителями
+        let mapsHtml = `<div class="card-header">Карты (кликните для статистики)</div><div class="map-grid" style="padding:15px;">`;
+        maps.forEach((map, idx) => {
+            const isWinnerMap = map.winner === matchWinner;
+            mapsHtml += `<div class="map-card" data-map-idx="${idx}" style="margin-bottom:10px;">
+                            <div class="map-name">${map.name}</div>
+                            <div class="map-score" style="display:flex; justify-content:space-between;">
+                                <span>${team1Name}: ${map.score.split(':')[0]}</span>
+                                <span>${team2Name}: ${map.score.split(':')[1]}</span>
+                            </div>
+                            <div class="map-winner ${isWinnerMap ? 'winner-green' : 'loser-red'}">Победитель: ${map.winner}</div>
+                         </div>`;
+        });
+        mapsHtml += `</div>`;
+        
         let tabsHtml = `<div class="tabs">
             <button class="tab-btn active" data-tab="overall">Общая статистика</button>`;
         for (let i = 0; i < maps.length; i++) {
@@ -227,7 +248,7 @@
         }
         tabsHtml += `</div>`;
         
-        let mapsHtml = '';
+        let mapsDetailedHtml = '';
         for (let i = 0; i < maps.length; i++) {
             const map = maps[i];
             const mapStats = new Map();
@@ -249,7 +270,7 @@
             function renderMapTeamTable(teamPlayersSet) {
                 const players = Array.from(mapStats.entries()).filter(([name]) => teamPlayersSet.has(name));
                 players.sort((a,b) => b[1].kills - a[1].kills);
-                let html = `<table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></tr></thead><tbody>`;
+                let html = `<table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th><tr></thead><tbody>`;
                 for (let [name, stats] of players) {
                     const acc = stats.accuracyCount ? (stats.accuracySum / stats.accuracyCount).toFixed(1) : '0';
                     html += `<tr><td class="player-link" data-player="${name}">${name}</td><td style="color:#F5A623;">${stats.kills}</td><td style="color:#F5A623;">${stats.deaths}</td><td style="color:#F5A623;">${stats.assists}</td><td style="color:#F5A623;">${stats.headshots}</td><td style="color:#F5A623;">${acc}%</td><td style="color:#F5A623;">${stats.clutches}</td><td style="color:#F5A623;">${stats.multikills}</td><td style="color:#F5A623;">${stats.revives}</td></tr>`;
@@ -257,7 +278,7 @@
                 html += `</tbody></table>`;
                 return html;
             }
-            mapsHtml += `<div class="tab-content" id="tab-map${i}">
+            mapsDetailedHtml += `<div class="tab-content" id="tab-map${i}">
                 <div class="team-stats-title">${team1Name}</div>
                 ${renderMapTeamTable(new Set(team1Players))}
                 <div class="team-stats-title">${team2Name}</div>
@@ -277,9 +298,10 @@
         
         let html = `<div class="card"><div class="card-header">${match.team1} vs ${match.team2} — ${match.score}</div>
                     <div class="match-row">Дата: ${matchDate} | Турнир: ${match.tournament || 'Astrum League'} | Стадия: ${match.stage || ''}</div>
+                    ${mapsHtml}
                     ${tabsHtml}
                     ${overallHtml}
-                    ${mapsHtml}
+                    ${mapsDetailedHtml}
                     ${teamsHtml}
                     <div style="padding:15px;"><button class="btn" id="backMatches">← Назад к списку матчей</button></div>
                     </div>`;
@@ -298,6 +320,12 @@
                 const tabId = btn.dataset.tab;
                 document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
                 document.getElementById(`tab-${tabId}`).classList.add('active');
+            });
+        });
+        document.querySelectorAll('.map-card').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const idx = parseInt(el.dataset.mapIdx);
+                document.querySelector(`.tab-btn[data-tab="map${idx}"]`).click();
             });
         });
         attachPlayerClicks();
@@ -338,7 +366,7 @@
                 }
             }
         }
-        let historyHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Соперник</th><th>Результат</th><th>Счёт</th><tr></thead><tbody>`;
+        let historyHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Соперник</th><th>Результат</th><th>Счёт</th></tr></thead><tbody>`;
         teamMatches.forEach(m => {
             const winner = getMatchWinner(m);
             const result = winner === teamName ? 'Победа' : 'Поражение';
@@ -441,7 +469,7 @@
         }
         mapStatsHtml += `</tbody></table>`;
         
-        let matchesHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Матч</th><th>Результат</th><th>Убийства</th><th>Смерти</th><th>K/D</th></tr></thead><tbody>`;
+        let matchesHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Матч</th><th>Результат</th><th>Убийства</th><th>Смерти</th><th>K/D</th><tr></thead><tbody>`;
         for (const match of playerMatches) {
             let playerStats = null;
             for (const map of match.maps_json || []) {
