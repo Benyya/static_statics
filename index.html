@@ -202,9 +202,9 @@
                     let statHtml = `<div class="card"><div class="card-header">Карта: ${mapDetail.name} — ${mapDetail.score}</div>
                                     <table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th><th>Класс</th></tr></thead><tbody>`;
                     mapDetail.stats.forEach(s => {
-                        statHtml += `<tr><td class="player-link" data-player="${s.player}">${s.player}</td><td style="color:#F5A623;">${s.kills}</td><td style="color:#F5A623;">${s.deaths}</td><td style="color:#F5A623;">${s.assists || 0}</td><td style="color:#F5A623;">${s.headshots || 0}</td><td style="color:#F5A623;">${s.accuracy || 0}%</td><td style="color:#F5A623;">${s.clutches || 0}</td><td style="color:#F5A623;">${s.multikills || 0}</td><td style="color:#F5A623;">${s.revives || 0}</td><td style="color:#F5A623;">${s.class ? '<span class="class-badge">'+s.class+'</span>' : '—'}</td></tr>`;
+                        statHtml += `<td><td class="player-link" data-player="${s.player}">${s.player}</td><td style="color:#F5A623;">${s.kills}</td><td style="color:#F5A623;">${s.deaths}</td><td style="color:#F5A623;">${s.assists || 0}</td><td style="color:#F5A623;">${s.headshots || 0}</td><td style="color:#F5A623;">${s.accuracy || 0}%</td><td style="color:#F5A623;">${s.clutches || 0}</td><td style="color:#F5A623;">${s.multikills || 0}</td><td style="color:#F5A623;">${s.revives || 0}</td><td style="color:#F5A623;">${s.class ? '<span class="class-badge">'+s.class+'</span>' : '—'}</td></tr>`;
                     });
-                    statHtml += `</tbody></table><div style="padding:15px;"><button class="btn" id="closeMapStats">Закрыть</button></div></div>`;
+                    statHtml += `</tbody><tr><div style="padding:15px;"><button class="btn" id="closeMapStats">Закрыть</button></div></div>`;
                     document.getElementById('matches-page').innerHTML = statHtml;
                     document.getElementById('closeMapStats').addEventListener('click', () => {
                         renderMatchDetail();
@@ -221,7 +221,7 @@
     function renderRatingUI() {
         const sorted = [...playersData].sort((a,b) => parseFloat(b.impact || b.влияние) - parseFloat(a.impact || a.влияние));
         let html = `<div class="card"><div class="card-header">🏆 Рейтинг игроков (Impact)</div>
-                    <table class="stats-table"><thead><tr><th>#</th><th>Игрок</th><th>Команда</th><th>Роль</th><th>Матчи</th><th>Убийства</th><th>K/D</th><th>Хэдшоты%</th><th>Impact</th></tr></thead><tbody>`;
+                    <table class="stats-table"><thead><tr><th>#</th><th>Игрок</th><th>Команда</th><th>Роль</th><th>Матчи</th><th>Убийства</th><th>K/D</th><th>Хэдшоты%</th><th>Impact</th></table></thead><tbody>`;
         sorted.forEach((p, idx) => {
             const name = p.name || p.имя;
             const team = p.team || p.команда;
@@ -233,7 +233,7 @@
             const role = p.role === 1 ? 'Капитан' : (p.role === 2 ? 'Игрок' : (p.role === 3 ? 'Запасной' : '—'));
             const kd = deaths ? (kills / deaths).toFixed(2) : '0';
             const hsPercent = kills ? ((headshots / kills) * 100).toFixed(1) : '0';
-            html += `<tr><td class="impact-high">${idx+1}</td><td class="player-link" data-player="${name}">${name}${p.role === 1 ? ' <i class="fas fa-crown captain-icon"></i>' : ''}</td><td style="color:#F5A623;">${team || '?'}</td><td style="color:#F5A623;">${role}</td><td style="color:#F5A623;">${matches}</td><td style="color:#F5A623;">${kills}</td><td style="color:#F5A623;">${kd}</td><td style="color:#F5A623;">${hsPercent}%</td><td class="impact-high">${impact}</td></tr>`;
+            html += `<tr><td class="impact-high">${idx+1}</td><td class="player-link" data-player="${name}">${name}${p.role === 1 ? ' <i class="fas fa-crown captain-icon"></i>' : ''}</td><td style="color:#F5A623;">${team || '?'}<td><td style="color:#F5A623;">${role}</td><td style="color:#F5A623;">${matches}</td><td style="color:#F5A623;">${kills}</td><td style="color:#F5A623;">${kd}</td><td style="color:#F5A623;">${hsPercent}%</td><td class="impact-high">${impact}</td></tr>`;
         });
         html += `</tbody></table></div>`;
         document.getElementById('rating-page').innerHTML = html;
@@ -336,7 +336,7 @@
                 }
             }
         }
-        let mapStatsHtml = `<table class="stats-table"><thead><tr><th>Карта</th><th>Класс</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Винрейт</th><tr></thead><tbody>`;
+        let mapStatsHtml = `<table class="stats-table"><thead><tr><th>Карта</th><th>Класс</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Винрейт</th></tr></thead><tbody>`;
         for (let [mapName, stats] of mapStats) {
             const acc = stats.count ? (stats.accuracySum / stats.count).toFixed(1) : '0';
             const winrate = stats.total ? ((stats.wins / stats.total) * 100).toFixed(1) : '0';
@@ -358,7 +358,7 @@
             const isWinner = (match.team1 === playerTeam && parseInt(match.score.split(':')[0]) > parseInt(match.score.split(':')[1])) || (match.team2 === playerTeam && parseInt(match.score.split(':')[1]) > parseInt(match.score.split(':')[0]));
             const result = isWinner ? 'Победа' : 'Поражение';
             const kd = playerStats && playerStats.deaths ? (playerStats.kills / playerStats.deaths).toFixed(2) : '0';
-            matchesHtml += `<tr><td style="color:#F5A623;">${formatDate(match.date)}</td><td style="color:#F5A623;">${match.team1} vs ${match.team2}</td><td style="color:#F5A623;">${result}</td><td>${playerStats?.kills || 0}</td><td style="color:#F5A623;">${playerStats?.deaths || 0}</td><td style="color:#F5A623;">${kd}</td></tr>`;
+            matchesHtml += `<tr><td style="color:#F5A623;">${formatDate(match.date)}</td><td style="color:#F5A623;">${match.team1} vs ${match.team2}</td><td style="color:#F5A623;">${result}</td><td style="color:#F5A623;">${playerStats?.kills || 0}</td><td style="color:#F5A623;">${playerStats?.deaths || 0}</td><td style="color:#F5A623;">${kd}</td></tr>`;
         }
         matchesHtml += `</tbody></table>`;
         const kd = player.deaths ? (player.kills / player.deaths).toFixed(2) : '0';
@@ -376,13 +376,13 @@
                             <tr><td style="color:#F5A623;">Роль</td><td style="color:#F5A623;">${roleDisplay}</td></tr>
                             <tr><td style="color:#F5A623;">Матчи</td><td style="color:#F5A623;">${player.matches || 0}</td></tr>
                             <tr><td style="color:#F5A623;">Победы</td><td style="color:#F5A623;">${player.wins || 0} (${((player.wins||0)/(player.matches||1)*100).toFixed(1)}%)</td></tr>
-                            <tr><td style="color:#F5A623;">Убийства</td><td style="color:#F5A623;">${player.kills || 0}</td><tr>
+                            <tr><td style="color:#F5A623;">Убийства</td><td style="color:#F5A623;">${player.kills || 0}</td></tr>
                             <tr><td style="color:#F5A623;">Смерти</td><td style="color:#F5A623;">${player.deaths || 0}</td></tr>
                             <tr><td style="color:#F5A623;">K/D</td><td style="color:#F5A623;">${kd}</td></tr>
                             <tr><td style="color:#F5A623;">Ассисты</td><td style="color:#F5A623;">${player.assists || 0}</td></tr>
                             <tr><td style="color:#F5A623;">Хэдшоты</td><td style="color:#F5A623;">${player.headshots || 0} (${hsPercent}%)</td></tr>
                             <tr><td style="color:#F5A623;">Точность</td><td style="color:#F5A623;">${player.accuracy || 0}%</td></tr>
-                            <tr><td style="color:#F5A623;">Клатчи</td><td style="color:#F5A623;">${player.clutches || 0}</td></tr>
+                            <tr><td style="color:#F5A623;">Клатчи</td><td style="color:#F5A623;">${player.clutches || 0}</td></td>
                             <tr><td style="color:#F5A623;">Мультикиллы</td><td style="color:#F5A623;">${player.multikills || 0}</td></tr>
                             <tr><td style="color:#F5A623;">Реанимации</td><td style="color:#F5A623;">${player.revives || 0}</td></tr>
                             <tr><td style="color:#F5A623;">Impact рейтинг</td><td class="impact-high">${player.impact || 0}</td></tr>
