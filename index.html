@@ -32,7 +32,7 @@
         .score { font-weight: 800; font-size: 1.1rem; color: #F5A623; }
         .btn { background: #1E2A36; border: none; color: #F5A623; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: 0.2s; }
         .btn:hover { background: #2A3A48; }
-        .stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 20px; }
         .stats-table th, .stats-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #1A2028; }
         .stats-table th { background: #12161F; color: #F5A623; font-weight: 600; cursor: pointer; }
         .player-link, .team-link { color: #F5A623; cursor: pointer; }
@@ -50,6 +50,8 @@
         .close-modal { float: right; cursor: pointer; font-size: 1.8rem; line-height: 1; }
         .impact-high { color: #F5A623; font-weight: bold; }
         .captain-icon { color: #F5A623; margin-left: 5px; font-size: 0.8rem; }
+        .class-badge { background: #1E2A36; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; margin-left: 8px; }
+        .team-stats-title { font-size: 1.2rem; font-weight: 700; margin: 20px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid #F5A623; display: inline-block; }
         @media (max-width: 800px) { .burger { display: block; } nav { display: none; width: 100%; flex-direction: column; } nav.show { display: flex; } .match-teams { flex-direction: column; align-items: flex-start; gap: 5px; } .match-info { text-align: left; margin-top: 8px; } }
     </style>
 </head>
@@ -194,12 +196,26 @@
                 const idx = parseInt(el.dataset.mapIdx);
                 const mapDetail = maps[idx];
                 if (mapDetail && mapDetail.stats && mapDetail.stats.length) {
-                    let statHtml = `<div class="card"><div class="card-header">Карта: ${mapDetail.name} — ${mapDetail.score}</div>
-                                    <table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th><tr></thead><tbody>`;
-                    mapDetail.stats.forEach(s => {
+                    // Разделяем игроков по командам
+                    const team1Players = teams[0]?.players.map(p => p.name) || [];
+                    const team2Players = teams[1]?.players.map(p => p.name) || [];
+                    const team1Stats = mapDetail.stats.filter(s => team1Players.includes(s.player));
+                    const team2Stats = mapDetail.stats.filter(s => team2Players.includes(s.player));
+                    
+                    let statHtml = `<div class="card"><div class="card-header">Карта: ${mapDetail.name} — ${mapDetail.score}</div>`;
+                    statHtml += `<div class="team-stats-title">${match.team1}</div>`;
+                    statHtml += `<table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></tr></thead><tbody>`;
+                    team1Stats.forEach(s => {
                         statHtml += `<tr><td class="player-link" data-player="${s.player}">${s.player}</td><td style="color:#F5A623;">${s.kills}</td><td style="color:#F5A623;">${s.deaths}</td><td style="color:#F5A623;">${s.assists || 0}</td><td style="color:#F5A623;">${s.headshots || 0}</td><td style="color:#F5A623;">${s.accuracy || 0}%</td><td style="color:#F5A623;">${s.clutches || 0}</td><td style="color:#F5A623;">${s.multikills || 0}</td><td style="color:#F5A623;">${s.revives || 0}</td></tr>`;
                     });
-                    statHtml += `</tbody></td><div style="padding:15px;"><button class="btn" id="closeMapStats">Закрыть</button></div></div>`;
+                    statHtml += `</tbody></table>`;
+                    statHtml += `<div class="team-stats-title">${match.team2}</div>`;
+                    statHtml += `<table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></tr></thead><tbody>`;
+                    team2Stats.forEach(s => {
+                        statHtml += `<tr><td class="player-link" data-player="${s.player}">${s.player}</td><td style="color:#F5A623;">${s.kills}</td><td style="color:#F5A623;">${s.deaths}</td><td style="color:#F5A623;">${s.assists || 0}</td><td style="color:#F5A623;">${s.headshots || 0}</td><td style="color:#F5A623;">${s.accuracy || 0}%</td><td style="color:#F5A623;">${s.clutches || 0}</td><td style="color:#F5A623;">${s.multikills || 0}</td><td style="color:#F5A623;">${s.revives || 0}</td></tr>`;
+                    });
+                    statHtml += `</tbody><tr>`;
+                    statHtml += `<div style="padding:15px;"><button class="btn" id="closeMapStats">Закрыть</button></div></div>`;
                     document.getElementById('matches-page').innerHTML = statHtml;
                     document.getElementById('closeMapStats').addEventListener('click', () => {
                         renderMatchDetail();
@@ -248,14 +264,14 @@
                 }
             }
         }
-        let historyHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Соперник</th><th>Результат</th><th>Счёт</th></td></thead><tbody>`;
+        let historyHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Соперник</th><th>Результат</th><th>Счёт</th><tr></thead><tbody>`;
         teamMatches.forEach(m => {
             const isWinner = (m.team1 === teamName && parseInt(m.score.split(':')[0]) > parseInt(m.score.split(':')[1])) || (m.team2 === teamName && parseInt(m.score.split(':')[1]) > parseInt(m.score.split(':')[0]));
             const result = isWinner ? 'Победа' : 'Поражение';
             const opponent = m.team1 === teamName ? m.team2 : m.team1;
             historyHtml += `<tr><td style="color:#F5A623;">${formatDate(m.date)}</td><td style="color:#F5A623;">${opponent}</td><td style="color:#F5A623;">${result}</td><td style="color:#F5A623;">${m.score}</td></tr>`;
         });
-        historyHtml += `</tbody><tr>`;
+        historyHtml += `</tbody></table>`;
         let playersHtml = `<div class="team-roster">`;
         teamPlayers.forEach(p => {
             const isCaptain = p.role === 'Капитан' || p.role === 1;
@@ -370,10 +386,10 @@
                             <tr><td style="color:#F5A623;">Роль</td><td style="color:#F5A623;">${roleDisplay}</td></tr>
                             <tr><td style="color:#F5A623;">Матчи</td><td style="color:#F5A623;">${player.matches || 0}</td></tr>
                             <tr><td style="color:#F5A623;">Победы</td><td style="color:#F5A623;">${player.wins || 0} (${((player.wins||0)/(player.matches||1)*100).toFixed(1)}%)</td></tr>
-                            <tr><td style="color:#F5A623;">Убийства</td><td style="color:#F5A623;">${player.kills || 0}</td></td>
+                            <tr><td style="color:#F5A623;">Убийства</td><td style="color:#F5A623;">${player.kills || 0}</td></tr>
                             <tr><td style="color:#F5A623;">Смерти</td><td style="color:#F5A623;">${player.deaths || 0}</td></tr>
                             <tr><td style="color:#F5A623;">K/D</td><td style="color:#F5A623;">${kd}</td></tr>
-                            <tr><td style="color:#F5A623;">Ассисты</td><td style="color:#F5A623;">${player.assists || 0}</td></tr>
+                            <tr><td style="color:#F5A623;">Ассисты</td><td style="color:#F5A623;">${player.assists || 0}</td></table>
                             <tr><td style="color:#F5A623;">Хэдшоты</td><td style="color:#F5A623;">${player.headshots || 0} (${hsPercent}%)</td></tr>
                             <tr><td style="color:#F5A623;">Точность</td><td style="color:#F5A623;">${player.accuracy || 0}%</td></tr>
                             <tr><td style="color:#F5A623;">Клатчи</td><td style="color:#F5A623;">${player.clutches || 0}</td></tr>
