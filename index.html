@@ -32,7 +32,7 @@
         .score { font-weight: 800; font-size: 1.1rem; color: #F5A623; }
         .btn { background: #1E2A36; border: none; color: #F5A623; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: 0.2s; }
         .btn:hover { background: #2A3A48; }
-        .stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 20px; }
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .stats-table th, .stats-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #1A2028; }
         .stats-table th { background: #12161F; color: #F5A623; font-weight: 600; cursor: pointer; }
         .player-link, .team-link { color: #F5A623; cursor: pointer; }
@@ -50,9 +50,11 @@
         .close-modal { float: right; cursor: pointer; font-size: 1.8rem; line-height: 1; }
         .impact-high { color: #F5A623; font-weight: bold; }
         .captain-icon { color: #F5A623; margin-left: 5px; font-size: 0.8rem; }
-        .class-badge { background: #1E2A36; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; margin-left: 8px; }
-        .team-stats-title { font-size: 1.2rem; font-weight: 700; margin: 20px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid #F5A623; display: inline-block; }
-        @media (max-width: 800px) { .burger { display: block; } nav { display: none; width: 100%; flex-direction: column; } nav.show { display: flex; } .match-teams { flex-direction: column; align-items: flex-start; gap: 5px; } .match-info { text-align: left; margin-top: 8px; } }
+        .player-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px; }
+        .stat-card { background: #12161F; border-radius: 12px; padding: 12px; text-align: center; }
+        .stat-value { font-size: 1.5rem; font-weight: 800; color: #F5A623; }
+        .stat-label { font-size: 0.7rem; color: #AAA; }
+        @media (max-width: 800px) { .burger { display: block; } nav { display: none; width: 100%; flex-direction: column; } nav.show { display: flex; } .match-teams { flex-direction: column; align-items: flex-start; gap: 5px; } .match-info { text-align: left; margin-top: 8px; } .player-stats-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -72,7 +74,7 @@
 </div>
 
 <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzcAf0zct0hhAG2X3in3lOBPSFwGMxKUTVNbQUaFpWEqFDt2Qoaa1rM9XjVltBcJy1utg/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzcAf0zct0hhAG2X3in3lOBPSFwGMxKUTVNbQUaFpWEqFDt2Qoaa1rM9XjVltBcJy1utg/exec'; // ЗАМЕНИТЕ
     let matchesData = [];
     let playersData = [];
     let currentPage = 'overview';
@@ -196,26 +198,12 @@
                 const idx = parseInt(el.dataset.mapIdx);
                 const mapDetail = maps[idx];
                 if (mapDetail && mapDetail.stats && mapDetail.stats.length) {
-                    // Разделяем игроков по командам
-                    const team1Players = teams[0]?.players.map(p => p.name) || [];
-                    const team2Players = teams[1]?.players.map(p => p.name) || [];
-                    const team1Stats = mapDetail.stats.filter(s => team1Players.includes(s.player));
-                    const team2Stats = mapDetail.stats.filter(s => team2Players.includes(s.player));
-                    
-                    let statHtml = `<div class="card"><div class="card-header">Карта: ${mapDetail.name} — ${mapDetail.score}</div>`;
-                    statHtml += `<div class="team-stats-title">${match.team1}</div>`;
-                    statHtml += `<table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></tr></thead><tbody>`;
-                    team1Stats.forEach(s => {
-                        statHtml += `<tr><td class="player-link" data-player="${s.player}">${s.player}</td><td style="color:#F5A623;">${s.kills}</td><td style="color:#F5A623;">${s.deaths}</td><td style="color:#F5A623;">${s.assists || 0}</td><td style="color:#F5A623;">${s.headshots || 0}</td><td style="color:#F5A623;">${s.accuracy || 0}%</td><td style="color:#F5A623;">${s.clutches || 0}</td><td style="color:#F5A623;">${s.multikills || 0}</td><td style="color:#F5A623;">${s.revives || 0}</td></tr>`;
+                    let statHtml = `<div class="card"><div class="card-header">Карта: ${mapDetail.name} — ${mapDetail.score}</div>
+                                    <table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></tr></thead><tbody>`;
+                    mapDetail.stats.forEach(s => {
+                        statHtml += `<tr><td class="player-link" data-player="${s.player}">${s.player}</td><td style="color:#F5A623;">${s.kills}</td><td style="color:#F5A623;">${s.deaths}</td><td style="color:#F5A623;">${s.assists || 0}</td><td style="color:#F5A623;">${s.headshots || 0}</td><td style="color:#F5A623;">${s.accuracy || 0}%</td><td style="color:#F5A623;">${s.clutches || 0}</td><td style="color:#F5A623;">${s.multikills || 0}</td><td style="color:#F5A623;">${s.revives || 0}<td></tr>`;
                     });
-                    statHtml += `</tbody></table>`;
-                    statHtml += `<div class="team-stats-title">${match.team2}</div>`;
-                    statHtml += `<table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></tr></thead><tbody>`;
-                    team2Stats.forEach(s => {
-                        statHtml += `<tr><td class="player-link" data-player="${s.player}">${s.player}</td><td style="color:#F5A623;">${s.kills}</td><td style="color:#F5A623;">${s.deaths}</td><td style="color:#F5A623;">${s.assists || 0}</td><td style="color:#F5A623;">${s.headshots || 0}</td><td style="color:#F5A623;">${s.accuracy || 0}%</td><td style="color:#F5A623;">${s.clutches || 0}</td><td style="color:#F5A623;">${s.multikills || 0}</td><td style="color:#F5A623;">${s.revives || 0}</td></tr>`;
-                    });
-                    statHtml += `</tbody><tr>`;
-                    statHtml += `<div style="padding:15px;"><button class="btn" id="closeMapStats">Закрыть</button></div></div>`;
+                    statHtml += `</tbody><tr><div style="padding:15px;"><button class="btn" id="closeMapStats">Закрыть</button></div></div>`;
                     document.getElementById('matches-page').innerHTML = statHtml;
                     document.getElementById('closeMapStats').addEventListener('click', () => {
                         renderMatchDetail();
@@ -264,12 +252,12 @@
                 }
             }
         }
-        let historyHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Соперник</th><th>Результат</th><th>Счёт</th><tr></thead><tbody>`;
+        let historyHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Соперник</th><th>Результат</th><th>Счёт</th></tr></thead><tbody>`;
         teamMatches.forEach(m => {
             const isWinner = (m.team1 === teamName && parseInt(m.score.split(':')[0]) > parseInt(m.score.split(':')[1])) || (m.team2 === teamName && parseInt(m.score.split(':')[1]) > parseInt(m.score.split(':')[0]));
             const result = isWinner ? 'Победа' : 'Поражение';
             const opponent = m.team1 === teamName ? m.team2 : m.team1;
-            historyHtml += `<tr><td style="color:#F5A623;">${formatDate(m.date)}</td><td style="color:#F5A623;">${opponent}</td><td style="color:#F5A623;">${result}</td><td style="color:#F5A623;">${m.score}</td></tr>`;
+            historyHtml += `<tr><td style="color:#F5A623;">${formatDate(m.date)}</td><td style="color:#F5A623;">${opponent}</td><td style="color:#F5A623;">${result}<tr><td style="color:#F5A623;">${m.score}</td></tr>`;
         });
         historyHtml += `</tbody></table>`;
         let playersHtml = `<div class="team-roster">`;
@@ -325,6 +313,41 @@
             }
             if (hasPlayer) playerMatches.push(match);
         }
+        // Пересчитываем победы игрока: игрок побеждает, если его команда выиграла матч (не карту)
+        let matchWins = 0;
+        let totalMatches = playerMatches.length;
+        for (const match of playerMatches) {
+            const team1Score = parseInt(match.score.split(':')[0]);
+            const team2Score = parseInt(match.score.split(':')[1]);
+            const isWinner = (match.team1 === playerTeam && team1Score > team2Score) || (match.team2 === playerTeam && team2Score > team1Score);
+            if (isWinner) matchWins++;
+        }
+        const winrate = totalMatches ? ((matchWins / totalMatches) * 100).toFixed(1) : '0';
+        
+        // Агрегируем общую статистику по всем картам (для All maps)
+        let totalKills = 0, totalDeaths = 0, totalHeadshots = 0, totalAccuracySum = 0, totalAccuracyCount = 0;
+        let totalClutches = 0, totalMultikills = 0, totalRevives = 0;
+        for (const match of playerMatches) {
+            for (const map of match.maps_json || []) {
+                for (const stat of map.stats || []) {
+                    if (stat.player === playerName) {
+                        totalKills += stat.kills || 0;
+                        totalDeaths += stat.deaths || 0;
+                        totalHeadshots += stat.headshots || 0;
+                        totalAccuracySum += stat.accuracy || 0;
+                        totalAccuracyCount++;
+                        totalClutches += stat.clutches || 0;
+                        totalMultikills += stat.multikills || 0;
+                        totalRevives += stat.revives || 0;
+                    }
+                }
+            }
+        }
+        const kd = totalDeaths ? (totalKills / totalDeaths).toFixed(2) : '0';
+        const avgAccuracy = totalAccuracyCount ? (totalAccuracySum / totalAccuracyCount).toFixed(1) : '0';
+        const hsPercent = totalKills ? ((totalHeadshots / totalKills) * 100).toFixed(1) : '0';
+        
+        // Статистика по картам (как раньше)
         const mapStats = new Map();
         for (const match of playerMatches) {
             for (const map of match.maps_json || []) {
@@ -341,7 +364,9 @@
                         ms.accuracySum += stat.accuracy || 0;
                         ms.count++;
                         ms.total++;
-                        if (map.winner === playerTeam) ms.wins++;
+                        // Определяем, выиграл ли игрок на этой карте (его команда победила на карте)
+                        const mapWinner = map.winner;
+                        if (playerTeam === mapWinner) ms.wins++;
                     }
                 }
             }
@@ -349,11 +374,13 @@
         let mapStatsHtml = `<table class="stats-table"><thead><tr><th>Карта</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Винрейт</th></tr></thead><tbody>`;
         for (let [mapName, stats] of mapStats) {
             const acc = stats.count ? (stats.accuracySum / stats.count).toFixed(1) : '0';
-            const winrate = stats.total ? ((stats.wins / stats.total) * 100).toFixed(1) : '0';
-            mapStatsHtml += `<tr><td style="color:#F5A623;">${mapName}</td><td style="color:#F5A623;">${stats.kills}</td><td style="color:#F5A623;">${stats.deaths}</td><td style="color:#F5A623;">${stats.assists}</td><td style="color:#F5A623;">${stats.headshots}</td><td style="color:#F5A623;">${acc}%</td><td style="color:#F5A623;">${winrate}%</td></tr>`;
+            const winrateMap = stats.total ? ((stats.wins / stats.total) * 100).toFixed(1) : '0';
+            mapStatsHtml += `<tr><td style="color:#F5A623;">${mapName}</td><td style="color:#F5A623;">${stats.kills}</td><td style="color:#F5A623;">${stats.deaths}</td><td style="color:#F5A623;">${stats.assists}</td><td style="color:#F5A623;">${stats.headshots}</td><td style="color:#F5A623;">${acc}%</td><td style="color:#F5A623;">${winrateMap}%</td></tr>`;
         }
         mapStatsHtml += `</tbody></table>`;
-        let matchesHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Матч</th><th>Результат</th><th>Убийства</th><th>Смерти</th><th>K/D</th></tr></thead><tbody>`;
+        
+        // История матчей (с результатами)
+        let matchesHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Матч</th><th>Результат команды</th><th>Убийства</th><th>Смерти</th><th>K/D</th></tr></thead><tbody>`;
         for (const match of playerMatches) {
             let playerStats = null;
             for (const map of match.maps_json || []) {
@@ -367,13 +394,13 @@
             }
             const isWinner = (match.team1 === playerTeam && parseInt(match.score.split(':')[0]) > parseInt(match.score.split(':')[1])) || (match.team2 === playerTeam && parseInt(match.score.split(':')[1]) > parseInt(match.score.split(':')[0]));
             const result = isWinner ? 'Победа' : 'Поражение';
-            const kd = playerStats && playerStats.deaths ? (playerStats.kills / playerStats.deaths).toFixed(2) : '0';
-            matchesHtml += `<tr><td style="color:#F5A623;">${formatDate(match.date)}</td><td style="color:#F5A623;">${match.team1} vs ${match.team2}</td><td style="color:#F5A623;">${result}</td><td style="color:#F5A623;">${playerStats?.kills || 0}</td><td style="color:#F5A623;">${playerStats?.deaths || 0}</td><td style="color:#F5A623;">${kd}</td></tr>`;
+            const kdMatch = playerStats && playerStats.deaths ? (playerStats.kills / playerStats.deaths).toFixed(2) : '0';
+            matchesHtml += `<tr><td style="color:#F5A623;">${formatDate(match.date)}</td><td style="color:#F5A623;">${match.team1} vs ${match.team2}</td><td style="color:#F5A623;">${result}</td><td style="color:#F5A623;">${playerStats?.kills || 0}</td><td style="color:#F5A623;">${playerStats?.deaths || 0}</td><td style="color:#F5A623;">${kdMatch}</td></tr>`;
         }
         matchesHtml += `</tbody></table>`;
-        const kd = player.deaths ? (player.kills / player.deaths).toFixed(2) : '0';
-        const hsPercent = player.kills ? ((player.headshots / player.kills) * 100).toFixed(1) : '0';
+        
         const roleDisplay = playerRole === 1 ? 'Капитан <i class="fas fa-crown captain-icon"></i>' : (playerRole === 2 ? 'Игрок' : (playerRole === 3 ? 'Запасной' : '—'));
+        
         let html = `<div class="card"><div class="card-header">${player.name} ${playerRole === 1 ? '<i class="fas fa-crown captain-icon"></i>' : ''} (${playerTeam || player.team || '?'})</div>
                     <div class="tabs">
                         <button class="tab-btn active" data-tab="overall">Общая статистика</button>
@@ -382,21 +409,20 @@
                         <button class="tab-btn" data-tab="maps">Карты</button>
                     </div>
                     <div class="tab-content active" id="tab-overall">
-                        <table class="stats-table"><tbody>
-                            <tr><td style="color:#F5A623;">Роль</td><td style="color:#F5A623;">${roleDisplay}</td></tr>
-                            <tr><td style="color:#F5A623;">Матчи</td><td style="color:#F5A623;">${player.matches || 0}</td></tr>
-                            <tr><td style="color:#F5A623;">Победы</td><td style="color:#F5A623;">${player.wins || 0} (${((player.wins||0)/(player.matches||1)*100).toFixed(1)}%)</td></tr>
-                            <tr><td style="color:#F5A623;">Убийства</td><td style="color:#F5A623;">${player.kills || 0}</td></tr>
-                            <tr><td style="color:#F5A623;">Смерти</td><td style="color:#F5A623;">${player.deaths || 0}</td></tr>
-                            <tr><td style="color:#F5A623;">K/D</td><td style="color:#F5A623;">${kd}</td></tr>
-                            <tr><td style="color:#F5A623;">Ассисты</td><td style="color:#F5A623;">${player.assists || 0}</td></table>
-                            <tr><td style="color:#F5A623;">Хэдшоты</td><td style="color:#F5A623;">${player.headshots || 0} (${hsPercent}%)</td></tr>
-                            <tr><td style="color:#F5A623;">Точность</td><td style="color:#F5A623;">${player.accuracy || 0}%</td></tr>
-                            <tr><td style="color:#F5A623;">Клатчи</td><td style="color:#F5A623;">${player.clutches || 0}</td></tr>
-                            <tr><td style="color:#F5A623;">Мультикиллы</td><td style="color:#F5A623;">${player.multikills || 0}</td></tr>
-                            <tr><td style="color:#F5A623;">Реанимации</td><td style="color:#F5A623;">${player.revives || 0}</td></tr>
-                            <tr><td style="color:#F5A623;">Impact рейтинг</td><td class="impact-high">${player.impact || 0}</td></tr>
-                        </tbody></table>
+                        <div class="player-stats-grid">
+                            <div class="stat-card"><div class="stat-value">${totalMatches}</div><div class="stat-label">Матчи</div></div>
+                            <div class="stat-card"><div class="stat-value">${matchWins}</div><div class="stat-label">Победы (${winrate}%)</div></div>
+                            <div class="stat-card"><div class="stat-value">${totalKills}</div><div class="stat-label">Убийства</div></div>
+                            <div class="stat-card"><div class="stat-value">${totalDeaths}</div><div class="stat-label">Смерти</div></div>
+                            <div class="stat-card"><div class="stat-value">${kd}</div><div class="stat-label">K/D</div></div>
+                            <div class="stat-card"><div class="stat-value">${player.assists || 0}</div><div class="stat-label">Ассисты</div></div>
+                            <div class="stat-card"><div class="stat-value">${totalHeadshots}</div><div class="stat-label">Хэдшоты (${hsPercent}%)</div></div>
+                            <div class="stat-card"><div class="stat-value">${avgAccuracy}%</div><div class="stat-label">Точность</div></div>
+                            <div class="stat-card"><div class="stat-value">${totalClutches}</div><div class="stat-label">Клатчи</div></div>
+                            <div class="stat-card"><div class="stat-value">${totalMultikills}</div><div class="stat-label">Мультикиллы</div></div>
+                            <div class="stat-card"><div class="stat-value">${totalRevives}</div><div class="stat-label">Реанимации</div></div>
+                            <div class="stat-card"><div class="stat-value">${player.impact || 0}</div><div class="stat-label">Impact рейтинг</div></div>
+                        </div>
                     </div>
                     <div class="tab-content" id="tab-team">
                         <div class="team-roster" id="teamRoster"></div>
