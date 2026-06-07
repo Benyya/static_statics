@@ -80,7 +80,7 @@
 </div>
 
 <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzcAf0zct0hhAG2X3in3lOBPSFwGMxKUTVNbQUaFpWEqFDt2Qoaa1rM9XjVltBcJy1utg/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyYR3zrPPD11DvVyzFPQCt9JOk0W6zPUAm5mgGwcA5RcZUlbRyFqvN_8sfN3ZjB7JjrKQ/exec';
     let matchesData = [];
     let playersData = [];
     let currentPage = 'overview';
@@ -179,7 +179,26 @@
         const teams = match.teams_json || [];
         const matchDate = match.date ? formatDate(match.date) : '';
         const matchWinner = getMatchWinner(match);
-        const manualMvp = match.mvp || null; // если в данных есть поле mvp
+        
+        // --- Вычисляем MVP матча (из ЛЮБОЙ команды, по формуле kills + revives*0.5) ---
+        let computedMvp = null;
+        const aggregated = {};
+        for (const map of maps) {
+            for (const stat of map.stats || []) {
+                if (!aggregated[stat.player]) aggregated[stat.player] = { kills:0, revives:0 };
+                aggregated[stat.player].kills += stat.kills || 0;
+                aggregated[stat.player].revives += stat.revives || 0;
+            }
+        }
+        let bestScore = -1;
+        for (const [player, st] of Object.entries(aggregated)) {
+            const score = st.kills + st.revives * 0.5;
+            if (score > bestScore) {
+                bestScore = score;
+                computedMvp = player;
+            }
+        }
+        const mvp = match.mvp || computedMvp;
         
         // Собираем общую статистику по всем картам
         const overallStats = new Map();
@@ -200,20 +219,6 @@
                 p.revives += stat.revives || 0;
             }
         }
-        // Если ручной MVP не задан, вычисляем автоматически (формула с бомбами и реанимациями)
-        let autoMvp = null;
-        let maxImpact = -1;
-        for (let [player, stats] of overallStats.entries()) {
-            if (stats.deaths === 0) continue;
-            // Подсчитываем бомбы и реанимации из карт (не хранятся в overallStats, нужно пересобрать)
-            // Для простоты используем только kills, headshots, deaths (можно расширить)
-            let impactVal = (stats.kills + stats.headshots) / stats.deaths;
-            if (impactVal > maxImpact) {
-                maxImpact = impactVal;
-                autoMvp = player;
-            }
-        }
-        const mvp = manualMvp || autoMvp;
         
         const team1Name = match.team1;
         const team2Name = match.team2;
@@ -265,17 +270,16 @@
                 p.multikills += stat.multikills || 0;
                 p.revives += stat.revives || 0;
             }
-            // Автоматический MVP карты (можно оставить для информации, но не выводить)
             const mapWinner = map.winner;
             function renderMapTeamTable(teamPlayersSet, teamName, isWinner) {
                 const players = Array.from(mapStats.entries()).filter(([name]) => teamPlayersSet.has(name));
                 players.sort((a,b) => b[1].kills - a[1].kills);
                 let titleClass = isWinner ? 'winner-title' : 'loser-title';
                 let html = `<div class="team-stats-title ${titleClass}">${teamName}</div>
-                            <table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th></td></thead><tbody>`;
+                            <table class="stats-table"><thead><tr><th>Игрок</th><th>Убийства</th><th>Смерти</th><th>Ассисты</th><th>Хэдшоты</th><th>Точность</th><th>Клатчи</th><th>Мультикиллы</th><th>Реанимации</th><tr></thead><tbody>`;
                 for (let [name, stats] of players) {
                     const acc = stats.accuracyCount ? (stats.accuracySum / stats.accuracyCount).toFixed(1) : '0';
-                    html += `<tr><td class="player-link" data-player="${name}">${name}${name === mvp ? ' <span class="mvp-badge">MVP</span>' : ''}</td><td style="color:#FFFFFF;">${stats.kills}</td><td style="color:#FFFFFF;">${stats.deaths}</td><td style="color:#FFFFFF;">${stats.assists}</td><td style="color:#FFFFFF;">${stats.headshots}</td><td style="color:#FFFFFF;">${acc}%</td><td style="color:#FFFFFF;">${stats.clutches}</td><td style="color:#FFFFFF;">${stats.multikills}</td><td style="color:#FFFFFF;">${stats.revives}</td></td>`;
+                    html += `<td><td class="player-link" data-player="${name}">${name}${name === mvp ? ' <span class="mvp-badge">MVP</span>' : ''}</td><td style="color:#FFFFFF;">${stats.kills}</td><td style="color:#FFFFFF;">${stats.deaths}</td><td style="color:#FFFFFF;">${stats.assists}</td><td style="color:#FFFFFF;">${stats.headshots}</td><td style="color:#FFFFFF;">${acc}%</td><td style="color:#FFFFFF;">${stats.clutches}</td><td style="color:#FFFFFF;">${stats.multikills}</td><td style="color:#FFFFFF;">${stats.revives}</td></tr>`;
                 }
                 html += `</tbody></table>`;
                 return html;
@@ -362,7 +366,7 @@
                 }
             }
         }
-        let historyHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Соперник</th><th>Результат</th><th>Счёт</th><tr></thead><tbody>`;
+        let historyHtml = `<table class="stats-table"><thead><tr><th>Дата</th><th>Соперник</th><th>Результат</th><th>Счёт</th></tr></thead><tbody>`;
         teamMatches.forEach(m => {
             const winner = getMatchWinner(m);
             const result = winner === teamName ? 'Победа' : 'Поражение';
@@ -731,11 +735,67 @@
         if (!id) return alert('Введите ID матча');
         if (!confirm(`Удалить матч ID ${id}?`)) return;
         try {
-            await fetch(API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id: id }) });
+            await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id: id }) });
             alert('Запрос на удаление отправлен. Обновите страницу через минуту.');
             setTimeout(() => location.reload(), 2000);
         } catch(e) { alert('Ошибка отправки'); }
     };
+    
+    // Вспомогательная функция поиска имени игрока по хэшу
+    function findPlayerNameByHash(team, hash) {
+        const player = team.players.find(p => p.hash === hash);
+        return player ? player.gameNick : null;
+    }
+    
+    // Вычисление MVP для одной карты (по формуле kills + revives*0.5, из ЛЮБОЙ команды)
+    function getMapMVP(team1, team2, game1, game2) {
+        let bestPlayer = null, bestScore = -1;
+        // Обрабатываем обе команды
+        for (const [hash, stat] of Object.entries(game1.stats)) {
+            const player = findPlayerNameByHash(team1, hash);
+            if (!player) continue;
+            const score = (stat.kills || 0) + (stat.resurrects || 0) * 0.5;
+            if (score > bestScore) {
+                bestScore = score;
+                bestPlayer = player;
+            }
+        }
+        for (const [hash, stat] of Object.entries(game2.stats)) {
+            const player = findPlayerNameByHash(team2, hash);
+            if (!player) continue;
+            const score = (stat.kills || 0) + (stat.resurrects || 0) * 0.5;
+            if (score > bestScore) {
+                bestScore = score;
+                bestPlayer = player;
+            }
+        }
+        return bestPlayer;
+    }
+    
+    // Вычисление общего MVP матча (сумма kills + revives*0.5 по всем картам, из ЛЮБОЙ команды)
+    function getOverallMVP(teams, gamesList) {
+        const totals = {};
+        for (const team of teams) {
+            for (const game of team.games) {
+                for (const [hash, stat] of Object.entries(game.stats)) {
+                    const player = findPlayerNameByHash(team, hash);
+                    if (!player) continue;
+                    if (!totals[player]) totals[player] = { kills:0, revives:0 };
+                    totals[player].kills += stat.kills || 0;
+                    totals[player].revives += stat.resurrects || 0;
+                }
+            }
+        }
+        let bestPlayer = null, bestScore = -1;
+        for (const [player, st] of Object.entries(totals)) {
+            const score = st.kills + st.revives * 0.5;
+            if (score > bestScore) {
+                bestScore = score;
+                bestPlayer = player;
+            }
+        }
+        return bestPlayer;
+    }
     
     document.getElementById('loadJsonBtn').onclick = async () => {
         const file = document.getElementById('statFile').files[0];
@@ -767,10 +827,15 @@
                     const playerName = playerObj ? playerObj.gameNick : hash;
                     editorHtml += `<tr><td>${playerName}</td><td>${team2Data.name}</td><td><select class="class-select" data-team="1" data-map="${i}" data-player="${playerName}">${classOptions.map(c => `<option value="${c === '—' ? '' : c}">${c}</option>`).join('')}</select></td></tr>`;
                 }
-                editorHtml += `</tbody><tr></div>`;
+                editorHtml += `</tbody></table></div>`;
             }
             document.getElementById('classEditor').innerHTML = editorHtml;
             document.getElementById('classEditor').style.display = 'block';
+            
+            // --- Автоматический расчёт MVP матча (из ЛЮБОЙ команды) ---
+            const team1 = json.games[0];
+            const team2 = json.games[1];
+            const autoMVP = getOverallMVP([team1, team2], [...team1.games, ...team2.games]);
             
             // Создаём селектор MVP
             const allPlayers = [];
@@ -781,6 +846,14 @@
             }
             const mvpSelect = document.getElementById('mvpSelect');
             mvpSelect.innerHTML = '<option value="">— Не указан —</option>' + allPlayers.map(p => `<option value="${p}">${p}</option>`).join('');
+            if (autoMVP) {
+                for (let i = 0; i < mvpSelect.options.length; i++) {
+                    if (mvpSelect.options[i].value === autoMVP) {
+                        mvpSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
             document.getElementById('mvpSelector').style.display = 'block';
             document.getElementById('submitMatchBtn').style.display = 'inline-block';
         } catch(e) { console.error(e); alert('Ошибка: ' + e.message); }
@@ -880,7 +953,7 @@
             alert('Матч с таким ID уже существует!');
             return;
         }
-        await fetch(API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', ...finalData }) });
+        await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', ...finalData }) });
         alert('Матч успешно добавлен! Страница будет обновлена.');
         setTimeout(() => location.reload(), 2000);
     };
